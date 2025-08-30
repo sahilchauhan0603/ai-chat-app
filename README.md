@@ -1,324 +1,171 @@
-# Chat AI App
+# AI Chat App - HelloAI
 
-A modern AI-powered chat application built with **Stream Chat**, **OpenAI**, and **web search capabilities**. This full-stack application provides an intelligent writing assistant that can help with content creation, research, and real-time collaboration.
+> **Live Demo**: [https://helloai-5ucr.onrender.com/](https://helloai-5ucr.onrender.com/)
 
-## 🚀 Features
+A modern AI-powered chat application built with React, TypeScript, and Stream Chat. Features real-time messaging, AI writing assistance, and file upload capabilities.
 
-- **Real-time Chat**: Powered by [GetStream.io](https://getstream.io) for seamless messaging
-- **AI Writing Assistant**: OpenAI GPT-4 integration for intelligent content generation
-- **Web Search**: Live web search capabilities using Tavily API for current information
-- **Modern UI**: Beautiful React interface with dark/light theme support
-- **Writing Prompts**: Categorized writing prompts for business, content, communication, and creative tasks
-- **Agent Management**: Dynamic AI agent lifecycle management
-- **Secure Authentication**: JWT-based token authentication
-- **Responsive Design**: Mobile-first design with Tailwind CSS
+## ✨ Features
+
+### 🤖 AI Writing Assistant
+- **Smart Writing Help**: Get assistance with business emails, content creation, and creative writing
+- **Real-time Responses**: AI generates responses as you type
+- **Context Awareness**: Maintains conversation context for better assistance
+- **Multiple AI Models**: Support for OpenAI and Google Gemini
+
+### 💬 Real-time Chat
+- **Instant Messaging**: Real-time message delivery with Stream Chat
+- **Message Editing**: Edit your messages within 24 hours
+- **Message History**: Complete chat history and conversation threads
+- **User Presence**: See when users are online/offline
+
+### 📁 File Upload & Analysis
+- **Multiple File Types**: Upload PDFs, images, documents, and text files
+- **Drag & Drop**: Intuitive file upload interface
+- **File Previews**: View images and file information before sending
+- **AI Analysis**: Ask questions about uploaded files and get AI-powered insights
+
+### 🎨 Modern UI/UX
+- **Responsive Design**: Works perfectly on desktop and mobile
+- **Dark/Light Mode**: Automatic theme switching based on system preference
+- **Beautiful Components**: Built with shadcn/ui and Tailwind CSS
+- **Smooth Animations**: Polished interactions and transitions
+
+### 🔒 Security & Privacy
+- **User Authentication**: Secure login and user management
+- **Channel Privacy**: Private chat channels for each conversation
+- **File Security**: Secure file handling and storage
+- **Real-time Updates**: Live status updates and notifications
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Stream Chat account
+- OpenAI API key or Google Gemini API key
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/ai-chat-app.git
+   cd ai-chat-app
+   ```
+
+2. **Install dependencies**
+   ```bash
+   # Install client dependencies
+   cd client
+   npm install
+   
+   # Install server dependencies
+   cd ../server
+   npm install
+   ```
+
+3. **Environment Setup**
+   ```bash
+   # Client (.env)
+   VITE_STREAM_API_KEY=your_stream_chat_api_key
+   VITE_BACKEND_URL=http://localhost:3001
+   
+   # Server (.env)
+   STREAM_API_KEY=your_stream_chat_api_key
+   STREAM_API_SECRET=your_stream_chat_api_secret
+   OPENAI_API_KEY=your_openai_api_key
+   GEMINI_API_KEY=your_gemini_api_key
+   ```
+
+4. **Run the application**
+   ```bash
+   # Start server
+   cd server
+   npm run dev
+   
+   # Start client (in new terminal)
+   cd client
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:5173`
 
 ## 🏗️ Architecture
 
-### Backend (`nodejs-ai-assistant/`)
-
-- **Node.js/Express** server
-- **Stream Chat** server-side integration
-- **OpenAI API** for AI responses
-- **Tavily API** for web search functionality
-- Agent management system with automatic cleanup
-
-### Frontend (`react-stream-ai-assistant/`)
-
-- **React** with TypeScript
-- **Stream Chat React** components
-- **Tailwind CSS** + **shadcn/ui** for modern styling
-- **Vite** for fast development and building
-
-## 📋 Prerequisites
-
-- Node.js 20 or higher
-- npm or yarn package manager
-- GetStream.io account (free tier available)
-- OpenAI API account
-- Tavily API account (for web search)
-
-## 🛠️ Setup Instructions
-
-### 1. Clone the Repository
-
-```bash
-git clone <your-repository-url>
-cd chat-ai-app
-```
-
-### 2. Backend Setup
-
-Navigate to the backend directory:
-
-```bash
-cd nodejs-ai-assistant
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Create environment file by copying the example:
-
-```bash
-cp .env.example .env
-```
-
-Configure your `.env` file with the following keys:
-
-```env
-# GetStream credentials - Get these from https://getstream.io/dashboard
-STREAM_API_KEY=your_stream_api_key_here
-STREAM_API_SECRET=your_stream_api_secret_here
-
-# OpenAI API key - Get from https://platform.openai.com/api-keys
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Tavily API key - Get from https://tavily.com
-TAVILY_API_KEY=your_tavily_api_key_here
-```
-
-### 3. Frontend Setup
-
-Navigate to the frontend directory:
-
-```bash
-cd ../react-stream-ai-assistant
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Create environment file:
-
-```bash
-cp .env.example .env
-```
-
-Configure your `.env` file:
-
-```env
-# Stream Chat Configuration
-VITE_STREAM_API_KEY=your_stream_api_key_here
-
-# Backend URL
-VITE_BACKEND_URL=http://localhost:3000
-```
-
-### 4. Getting API Keys
-
-#### GetStream.io Setup
-
-1. Sign up at [GetStream.io](https://getstream.io/chat/trial/)
-2. Create a new Chat application
-3. Copy your **API Key** and **API Secret** from the dashboard
-4. Use the same **API Key** in both backend and frontend `.env` files
-
-#### OpenAI API Setup
-
-1. Sign up at [OpenAI Platform](https://platform.openai.com/)
-2. Navigate to API Keys section
-3. Create a new API key
-4. Add it to your backend `.env` file
-
-#### Tavily API Setup
-
-1. Sign up at [Tavily](https://tavily.com/)
-2. Get your API key from the dashboard
-3. Add it to your backend `.env` file
-
-## 🚀 Running the Application
-
-### Start the Backend Server
-
-```bash
-cd nodejs-ai-assistant
-npm run dev
-```
-
-The backend will run on `http://localhost:3000`
-
-### Start the Frontend Application
-
-```bash
-cd react-stream-ai-assistant
-npm run dev
-```
-
-The frontend will run on `http://localhost:8080`
-
-## 📖 How GetStream.io Works
-
-[GetStream.io](https://getstream.io) is a cloud-based API service that provides real-time chat functionality. Here's how it integrates with our app:
-
-### Core Concepts
-
-1. **Stream Chat Client**: Handles all chat operations and real-time updates
-2. **Channels**: Individual chat rooms where messages are exchanged
-3. **Users**: Authenticated participants in the chat
-4. **Messages**: Text, files, reactions, and custom data
-5. **Tokens**: JWT-based authentication for secure access
-
-### Integration Flow
-
-```mermaid
-graph TD
-    A[Frontend React App] --> B[Stream Chat React Components]
-    B --> C[Stream Chat API]
-    C --> D[Backend Node.js Server]
-    D --> E[OpenAI API]
-    D --> F[Tavily Web Search]
-    D --> G[AI Agent Management]
-```
-
-### Key Features Used
-
-- **Real-time Messaging**: Instant message delivery and updates
-- **User Presence**: Online/offline status indicators
-- **Channel Management**: Create, join, and manage chat channels
-- **Message Threading**: Support for threaded conversations
-- **File Uploads**: Share images and documents
-- **Custom Fields**: Extended message and user data
-- **Webhooks**: Server-side event handling
-
-## 🤖 AI Agent System
-
-The application features a sophisticated AI agent management system:
-
-### Agent Lifecycle
-
-1. **Creation**: AI agents are created per channel when requested
-2. **Initialization**: OpenAI assistant setup with web search capabilities
-3. **Message Handling**: Processes user messages and generates responses
-4. **Web Search**: Automatically searches the web for current information
-5. **Cleanup**: Automatic disposal after inactivity
-
-### Agent Capabilities
-
-- **Content Writing**: Various writing tasks from business to creative
-- **Web Research**: Live search for current information and facts
-- **Context Awareness**: Maintains conversation context
-- **Customizable Prompts**: Specialized writing assistance
-
-## 🎨 UI Components
-
-The frontend uses modern UI components built with:
-
-- **Radix UI**: Accessible component primitives
-- **Tailwind CSS**: Utility-first CSS framework
-- **shadcn/ui**: Beautiful, customizable components
-- **Lucide React**: Modern icon library
-- **Dark Mode Support**: System preference detection
-
-## 📡 API Endpoints
-
-### Backend Routes
-
-- `GET /` - Health check and server status
-- `POST /start-ai-agent` - Initialize AI agent for a channel
-- `POST /stop-ai-agent` - Stop and cleanup AI agent
-- `GET /agent-status` - Check AI agent status
-- `POST /token` - Generate user authentication tokens
-
-## 🔒 Security Features
-
-- **JWT Authentication**: Secure token-based authentication
-- **Environment Variables**: Sensitive data protection
-- **CORS Configuration**: Cross-origin request security
-- **Token Expiration**: Automatic token refresh system
-- **Input Validation**: Server-side validation for all requests
-
-## 🚀 Deployment
-
-### Backend Deployment
-
-1. Set environment variables on your hosting platform
-2. Run `npm run start` for production
-3. Ensure PORT is configured (defaults to 3000)
-
-### Frontend Deployment
-
-1. Run `npm run build` to create production build
-2. Deploy the `dist` folder to your static hosting service
-3. Configure environment variables for production
-
-## 🛠️ Development
-
-### Backend Development
-
-```bash
-cd nodejs-ai-assistant
-npm run dev  # Starts with nodemon for auto-reload
-```
-
-### Frontend Development
-
-```bash
-cd react-stream-ai-assistant
-npm run dev  # Starts Vite dev server
-```
-
-### Building for Production
-
-```bash
-# Backend
-cd nodejs-ai-assistant
-npm run start
-
-# Frontend
-cd react-stream-ai-assistant
-npm run build
-```
-
-## 📚 Technologies Used
+### Frontend
+- **React 18** with TypeScript
+- **Stream Chat React** for real-time messaging
+- **Tailwind CSS** for styling
+- **shadcn/ui** for UI components
+- **Vite** for fast development
 
 ### Backend
+- **Node.js** with TypeScript
+- **Stream Chat** for chat infrastructure
+- **AI Integration** with OpenAI and Google Gemini
+- **WebSocket** for real-time communication
 
-- **Node.js** - Runtime environment
-- **Express** - Web framework
-- **Stream Chat** - Real-time messaging
-- **OpenAI** - AI language model
-- **Axios** - HTTP client
-- **CORS** - Cross-origin resource sharing
-- **TypeScript** - Type safety
+### Key Components
+- **Chat Interface**: Main messaging area with AI assistance
+- **File Upload**: Drag & drop file handling
+- **Message Editing**: In-place message editing
+- **AI Agent Control**: Manage AI assistant status
+- **Responsive Sidebar**: Channel management and navigation
 
-### Frontend
+## 🔧 Configuration
 
-- **React** - UI library
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **Stream Chat React** - Chat UI components
-- **Tailwind CSS** - Styling
-- **Radix UI** - Accessible components
-- **React Hook Form** - Form handling
-- **React Router** - Navigation
+### AI Models
+- **OpenAI GPT-4**: Advanced language model for writing assistance
+- **Google Gemini**: Alternative AI model for diverse responses
+- **Web Search**: Real-time information gathering capabilities
+
+### File Support
+- **Images**: JPG, PNG, GIF, BMP, WebP
+- **Documents**: PDF, DOC, DOCX, TXT, MD
+- **Size Limits**: Configurable file size restrictions
+
+## 📱 Usage
+
+### Starting a Chat
+1. Click "New Chat" to begin
+2. Type your message or upload files
+3. AI assistant automatically joins the conversation
+4. Ask questions or request writing help
+
+### File Upload
+1. Drag & drop files onto the chat area
+2. Or click the 📎 button to select files
+3. Add your question about the files
+4. AI analyzes content and responds
+
+### Message Editing
+1. Hover over your message
+2. Click the edit button
+3. Modify your text
+4. Press Enter to send the edited version
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## 🙏 Acknowledgments
 
-For support and questions:
-
-- Check the [GetStream.io Documentation](https://getstream.io/chat/docs/)
-- Review [OpenAI API Documentation](https://platform.openai.com/docs)
-- Create an issue in this repository
+- [Stream Chat](https://getstream.io/) for real-time chat infrastructure
+- [OpenAI](https://openai.com/) for AI language models
+- [Google Gemini](https://ai.google.dev/) for alternative AI capabilities
+- [shadcn/ui](https://ui.shadcn.com/) for beautiful UI components
+- [Tailwind CSS](https://tailwindcss.com/) for utility-first CSS framework
 
 ---
 
-Built with ❤️ using GetStream.io, OpenAI, and modern web technologies.
+**Made with ❤️ by [Your Name]**
+
+For support, email: support@yourdomain.com
