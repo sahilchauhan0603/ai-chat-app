@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Bot, Check, Copy, ThumbsUp, ThumbsDown, Edit3, MoreHorizontal, User, Send } from "lucide-react";
+import { Bot, Check, Copy, ThumbsUp, ThumbsDown, Edit3, User, Send, Download, Eye, FileText, Image, File, X } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -11,12 +11,125 @@ import {
   useMessageTextStreaming,
   useChannelActionContext,
 } from "stream-chat-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
+// File attachment component
+const FileAttachment: React.FC<{ attachment: any }> = ({ attachment }) => {
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
+  const isImage = attachment.mime_type?.startsWith('image/');
+  const isDocument = attachment.mime_type?.includes('pdf') || 
+                    attachment.mime_type?.includes('document') || 
+                    attachment.mime_type?.includes('text');
+  
+  const getFileIcon = () => {
+    if (isImage) return <Image className="h-4 w-4" />;
+    if (isDocument) return <FileText className="h-4 w-4" />;
+    return <File className="h-4 w-4" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleDownload = () => {
+    if (attachment.asset_url) {
+      const link = document.createElement('a');
+      link.href = attachment.asset_url;
+      link.download = attachment.title || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  return (
+    <div className="mt-3 p-3 bg-muted/30 rounded-lg border border-muted/50">
+      <div className="flex items-start gap-3">
+        {/* File Icon/Preview */}
+        <div className="flex-shrink-0">
+          {isImage && attachment.image_url ? (
+            <img
+              src={attachment.image_url}
+              alt={attachment.title || 'Image'}
+              className="h-12 w-12 object-cover rounded border"
+            />
+          ) : (
+            <div className="h-12 w-12 bg-muted rounded border flex items-center justify-center">
+              {getFileIcon()}
+            </div>
+          )}
+        </div>
+
+        {/* File Info */}
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-medium text-foreground truncate">
+            {attachment.title || 'Untitled'}
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            {formatFileSize(attachment.file_size || 0)}
+          </p>
+          {attachment.mime_type && (
+            <p className="text-xs text-muted-foreground/70">
+              {attachment.mime_type}
+            </p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1">
+          {isImage && attachment.image_url && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsPreviewOpen(true)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              title="Preview"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownload}
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            title="Download"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Image Preview Modal */}
+      {isPreviewOpen && isImage && attachment.image_url && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+          onClick={() => setIsPreviewOpen(false)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] p-4">
+            <img
+              src={attachment.image_url}
+              alt={attachment.title || 'Image preview'}
+              className="max-w-full max-h-full object-contain rounded"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsPreviewOpen(false)}
+              className="absolute top-2 right-2 h-8 w-8 bg-black/50 text-white hover:bg-black/70"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ChatMessage: React.FC = () => {
   const { message } = useMessageContext();
@@ -49,6 +162,9 @@ const ChatMessage: React.FC = () => {
     message.user?.id && 
     new Date(message.created_at || 0).getTime() > Date.now() - 24 * 60 * 60 * 1000;
 
+  // Check if message has attachments
+  const hasAttachments = message.attachments && message.attachments.length > 0;
+
   // Auto-scroll to bottom when new message streams in
   useEffect(() => {
     if (streamedMessageText && !isUser && messageEndRef.current) {
@@ -63,7 +179,6 @@ const ChatMessage: React.FC = () => {
   useEffect(() => {
     setEditValue(message.text || "");
   }, [message.text]);
-
 
   const copyToClipboard = async () => {
     if (streamedMessageText) {
@@ -228,6 +343,7 @@ const ChatMessage: React.FC = () => {
                   </div>
                 </div>
               )}
+              
               {isUser && isEditing ? (
                 <div className="flex flex-col gap-3">
                   <div className="relative">
@@ -278,7 +394,7 @@ const ChatMessage: React.FC = () => {
                         )}
                       </Button>
                     </div>
-                    <div className="text-xs text-muted-foreground/60 text-black text-center">
+                    <div className="text-xs text-black text-center">
                       💡 Press Enter to send, Shift+Enter for new line, Esc to cancel
                     </div>
                     {isSubmitting && (
@@ -358,22 +474,31 @@ const ChatMessage: React.FC = () => {
                   {streamedMessageText || message.text || ""}
                 </ReactMarkdown>
               )}
-            </div>
 
-            {/* Loading State */}
-            {aiState && !streamedMessageText && !message.text && (
-              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
-                <div className="flex space-x-1.5">
-                  <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60"></div>
-                  <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.2s' }}></div>
+              {/* File Attachments */}
+              {hasAttachments && !isEditing && (
+                <div className="mt-3 space-y-2">
+                  {message.attachments?.map((attachment, index) => (
+                    <FileAttachment key={index} attachment={attachment} />
+                  ))}
                 </div>
-                <span className="text-xs opacity-70">{getAiStateMessage()}</span>
-              </div>
-            )}
+              )}
 
-            {/* Invisible element for auto-scrolling */}
-            <div ref={messageEndRef} />
+              {/* Loading State */}
+              {aiState && !streamedMessageText && !message.text && (
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
+                  <div className="flex space-x-1.5">
+                    <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60"></div>
+                    <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span className="text-xs opacity-70">{getAiStateMessage()}</span>
+                </div>
+              )}
+
+              {/* Invisible element for auto-scrolling */}
+              <div ref={messageEndRef} />
+            </div>
           </div>
 
           {/* Timestamp and Actions */}
@@ -448,8 +573,9 @@ const ChatMessage: React.FC = () => {
                   </Button>
                 </>
               )}
+              
               {/* User message actions (edit, copy query) */}
-              {isUser && !!message.text && !isEditing && (
+              {isUser && (!!message.text || hasAttachments) && (
                 <>
                   {canEdit ? (
                     <Button

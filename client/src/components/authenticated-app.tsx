@@ -53,13 +53,19 @@ const AuthenticatedCore = ({ user, onLogout }: AuthenticatedAppProps) => {
     syncChannelWithUrl();
   }, [channelId, client, setActiveChannel]);
 
-  const handleNewChatMessage = async (message: { text: string }) => {
+  const handleNewChatMessage = async (message: { text: string; files?: File[] }) => {
     if (!user.id) return;
 
     try {
       // 1. Create a new channel with the user as the only member
+      const channelName = message.text 
+        ? message.text.substring(0, 50) 
+        : message.files && message.files.length > 0 
+          ? `File upload: ${message.files.length} file${message.files.length > 1 ? 's' : ''}`
+          : "New chat";
+      
       const newChannel = client.channel("messaging", uuidv4(), {
-        name: message.text.substring(0, 50),
+        name: channelName,
         members: [user.id],
       });
       await newChannel.watch();
@@ -95,7 +101,21 @@ const AuthenticatedCore = ({ user, onLogout }: AuthenticatedAppProps) => {
 
       // 5. Wait for AI agent to be added as member, then send message
       await memberAddedPromise;
-      await newChannel.sendMessage(message);
+      
+      // 6. Send message with files if present
+      if (message.files && message.files.length > 0) {
+        // For now, we'll send the text message first, then handle files separately
+        // In a full implementation, you'd want to upload files to your backend first
+        const messageText = message.text || `I've uploaded ${message.files.length} file${message.files.length > 1 ? 's' : ''}. Please analyze them and help me with my request.`;
+        
+        await newChannel.sendMessage({
+          text: messageText,
+          // Note: Stream Chat handles file uploads differently
+          // You may need to implement file upload to your backend first
+        });
+      } else {
+        await newChannel.sendMessage(message);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Something went wrong";

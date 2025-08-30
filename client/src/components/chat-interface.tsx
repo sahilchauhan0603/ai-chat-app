@@ -26,7 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 interface ChatInterfaceProps {
   onToggleSidebar: () => void;
-  onNewChatMessage: (message: { text: string }) => Promise<void>;
+  onNewChatMessage: (message: { text: string; files?: File[] }) => Promise<void>;
   backendUrl: string;
 }
 
