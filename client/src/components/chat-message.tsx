@@ -31,8 +31,11 @@ const ChatMessage: React.FC = () => {
 
   const isUser = !message.user?.id?.startsWith("ai-bot");
   const [copied, setCopied] = useState(false);
+  const [copiedQuery, setCopiedQuery] = useState(false);
   const [reaction, setReaction] = useState<'like' | 'dislike' | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(message.text || "");
 
   // Auto-scroll to bottom when new message streams in
   useEffect(() => {
@@ -44,12 +47,29 @@ const ChatMessage: React.FC = () => {
     }
   }, [streamedMessageText, isUser]);
 
+
   const copyToClipboard = async () => {
     if (streamedMessageText) {
       await navigator.clipboard.writeText(streamedMessageText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const copyQueryToClipboard = async () => {
+    if (message.text) {
+      await navigator.clipboard.writeText(message.text);
+      setCopiedQuery(true);
+      setTimeout(() => setCopiedQuery(false), 2000);
+    }
+  };
+
+  // Dummy function to simulate resubmitting the edited query
+  // Replace this with your actual send message logic
+  const handleResubmitQuery = () => {
+    // TODO: Integrate with your chat input/send logic
+    // e.g., call a prop or context function to send editValue
+    setIsEditing(false);
   };
 
   const getAiStateMessage = () => {
@@ -132,91 +152,95 @@ const ChatMessage: React.FC = () => {
                 : "bg-muted/50 border rounded-bl-md"
             )}
           >
-            {/* Message Text */}
+            {/* Message Text or Edit Input */}
             <div className="break-words">
-              <ReactMarkdown
-                components={{
-                  p: ({ children }) => (
-                    <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
-                  ),
-                  code: ({ children, ...props }) => {
-                    const { node, ...rest } = props;
-                    const isInline = !rest.className?.includes("language-");
-
-                    return isInline ? (
-                      <code
-                        className="px-1.5 py-0.5 rounded text-xs font-mono bg-black/10 dark:bg-white/10"
-                        {...rest}
+              {isUser && isEditing ? (
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    className="w-full rounded border p-2 text-sm text-foreground bg-background"
+                    value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    rows={2}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" className="bg-gray-800" onClick={handleResubmitQuery}>
+                      Resubmit
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => (
+                      <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
+                    ),
+                    code: ({ children, ...props }) => {
+                      const { node, ...rest } = props;
+                      const isInline = !rest.className?.includes("language-");
+                      return isInline ? (
+                        <code
+                          className="px-1.5 py-0.5 rounded text-xs font-mono bg-black/10 dark:bg-white/10"
+                          {...rest}
+                        >
+                          {children}
+                        </code>
+                      ) : (
+                        <div className="relative my-3">
+                          <pre className="p-3 rounded-md overflow-x-auto text-xs font-mono bg-black/5 dark:bg-white/5 border">
+                            <code {...rest}>{children}</code>
+                          </pre>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigator.clipboard.writeText(String(children))}
+                            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    },
+                    ul: ({ children }) => (
+                      <ul className="list-disc ml-4 mb-3 space-y-1">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal ml-4 mb-3 space-y-1">{children}</ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="leading-relaxed">{children}</li>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 pl-4 my-3 italic border-primary/50 bg-primary/5 py-1 rounded-r">{children}</blockquote>
+                    ),
+                    h1: ({ children }) => (
+                      <h1 className="text-lg font-semibold mb-3 mt-4 first:mt-0 border-b pb-1">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-sm font-semibold mb-2 mt-3 first:mt-0">{children}</h3>
+                    ),
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    em: ({ children }) => <em className="italic">{children}</em>,
+                    a: ({ children, href }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
                       >
                         {children}
-                      </code>
-                    ) : (
-                      <div className="relative my-3">
-                        <pre className="p-3 rounded-md overflow-x-auto text-xs font-mono bg-black/5 dark:bg-white/5 border">
-                          <code {...rest}>{children}</code>
-                        </pre>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigator.clipboard.writeText(String(children))}
-                          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    );
-                  },
-                  ul: ({ children }) => (
-                    <ul className="list-disc ml-4 mb-3 space-y-1">
-                      {children}
-                    </ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="list-decimal ml-4 mb-3 space-y-1">
-                      {children}
-                    </ol>
-                  ),
-                  li: ({ children }) => (
-                    <li className="leading-relaxed">{children}</li>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 pl-4 my-3 italic border-primary/50 bg-primary/5 py-1 rounded-r">
-                      {children}
-                    </blockquote>
-                  ),
-                  h1: ({ children }) => (
-                    <h1 className="text-lg font-semibold mb-3 mt-4 first:mt-0 border-b pb-1">
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-base font-semibold mb-2 mt-3 first:mt-0">
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-sm font-semibold mb-2 mt-3 first:mt-0">
-                      {children}
-                    </h3>
-                  ),
-                  strong: ({ children }) => (
-                    <strong className="font-semibold">{children}</strong>
-                  ),
-                  em: ({ children }) => <em className="italic">{children}</em>,
-                  a: ({ children, href }) => (
-                    <a 
-                      href={href} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
-                    >
-                      {children}
-                    </a>
-                  ),
-                }}
-              >
-                {streamedMessageText || message.text || ""}
-              </ReactMarkdown>
+                      </a>
+                    ),
+                  }}
+                >
+                  {streamedMessageText || message.text || ""}
+                </ReactMarkdown>
+              )}
             </div>
 
             {/* Loading State */}
@@ -227,9 +251,7 @@ const ChatMessage: React.FC = () => {
                   <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.1s' }}></div>
                   <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.2s' }}></div>
                 </div>
-                <span className="text-xs opacity-70">
-                  {getAiStateMessage()}
-                </span>
+                <span className="text-xs opacity-70">{getAiStateMessage()}</span>
               </div>
             )}
 
@@ -248,6 +270,7 @@ const ChatMessage: React.FC = () => {
               "flex items-center gap-1 transition-all duration-200",
               isHovered || !isUser ? "opacity-100" : "opacity-0"
             )}>
+              {/* AI message actions (like, dislike, copy response) */}
               {!isUser && !!streamedMessageText && (
                 <>
                   <Button
@@ -263,7 +286,6 @@ const ChatMessage: React.FC = () => {
                   >
                     <ThumbsUp className="h-3 w-3" />
                   </Button>
-
                   <Button
                     variant="ghost"
                     size="sm"
@@ -277,7 +299,6 @@ const ChatMessage: React.FC = () => {
                   >
                     <ThumbsDown className="h-3 w-3" />
                   </Button>
-
                   <Button
                     variant="ghost"
                     size="sm"
@@ -301,36 +322,43 @@ const ChatMessage: React.FC = () => {
                       </>
                     )}
                   </Button>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md"
-                      >
-                        <MoreHorizontal className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={copyToClipboard}>
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy text
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit3 className="h-4 w-4 mr-2" />
-                        Edit response
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <ThumbsUp className="h-4 w-4 mr-2" />
-                        Good response
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <ThumbsDown className="h-4 w-4 mr-2" />
-                        Needs improvement
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                </>
+              )}
+              {/* User message actions (edit, copy query) */}
+              {isUser && !!message.text && !isEditing && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="h-6 px-2 text-xs rounded-md gap-1 transition-colors text-muted-foreground hover:text-blue-600 hover:bg-muted"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                    <span>Edit</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyQueryToClipboard}
+                    className={cn(
+                      "h-6 px-2 text-xs rounded-md gap-1 transition-colors",
+                      copiedQuery
+                        ? "text-green-600 bg-green-100 dark:bg-green-900/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    {copiedQuery ? (
+                      <>
+                        <Check className="h-3 w-3" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </Button>
                 </>
               )}
             </div>

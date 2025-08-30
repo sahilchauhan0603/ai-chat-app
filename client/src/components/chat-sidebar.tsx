@@ -131,7 +131,7 @@ export const ChatSidebar = ({
       <div
         className={cn(
           "fixed lg:relative inset-y-0 left-0 z-50 bg-background border-r flex flex-col transform transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-16" : "w-80",
+          isCollapsed ? "w-16" : "w-64",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
