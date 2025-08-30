@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Bot, Check, Copy, ThumbsUp, ThumbsDown, Edit3, MoreHorizontal, User } from "lucide-react";
+import { Bot, Check, Copy, ThumbsUp, ThumbsDown, Edit3, MoreHorizontal, User, Send } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -9,6 +9,7 @@ import {
   useChannelStateContext,
   useMessageContext,
   useMessageTextStreaming,
+  useChannelActionContext,
 } from "stream-chat-react";
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ import {
 const ChatMessage: React.FC = () => {
   const { message } = useMessageContext();
   const { channel } = useChannelStateContext();
+  const { sendMessage } = useChannelActionContext();
   const { aiState } = useAIState(channel);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +38,16 @@ const ChatMessage: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(message.text || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check if message has been edited
+  const isEdited = message.updated_at && 
+    new Date(message.updated_at).getTime() > new Date(message.created_at || 0).getTime();
+
+  // Check if message can be edited (within 24 hours and user is author)
+  const canEdit = isUser && 
+    message.user?.id && 
+    new Date(message.created_at || 0).getTime() > Date.now() - 24 * 60 * 60 * 1000;
 
   // Auto-scroll to bottom when new message streams in
   useEffect(() => {
@@ -46,6 +58,11 @@ const ChatMessage: React.FC = () => {
       });
     }
   }, [streamedMessageText, isUser]);
+
+  // Reset edit value when message changes
+  useEffect(() => {
+    setEditValue(message.text || "");
+  }, [message.text]);
 
 
   const copyToClipboard = async () => {
@@ -64,12 +81,52 @@ const ChatMessage: React.FC = () => {
     }
   };
 
-  // Dummy function to simulate resubmitting the edited query
-  // Replace this with your actual send message logic
-  const handleResubmitQuery = () => {
-    // TODO: Integrate with your chat input/send logic
-    // e.g., call a prop or context function to send editValue
+  // Handle resubmitting the edited query
+  const handleResubmitQuery = async () => {
+    if (!editValue.trim() || !channel) return;
+    
+    // Validate message length
+    if (editValue.length > 1000) {
+      alert("Message is too long. Please keep it under 1000 characters.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      // Send the edited message
+      await sendMessage({
+        text: editValue,
+        parent_id: message.id, // Link to the original message
+      });
+      
+      // Exit edit mode
+      setIsEditing(false);
+      setEditValue("");
+      
+      // Show success feedback (optional)
+      // You could add a toast notification here
+    } catch (error) {
+      console.error("Failed to send edited message:", error);
+      alert("Failed to send edited message. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle canceling edit
+  const handleCancelEdit = () => {
     setIsEditing(false);
+    setEditValue(message.text || ""); // Reset to original text
+  };
+
+  // Handle Enter key in edit mode
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleResubmitQuery();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
   };
 
   const getAiStateMessage = () => {
@@ -148,27 +205,87 @@ const ChatMessage: React.FC = () => {
             className={cn(
               "px-4 py-3 rounded-2xl text-sm leading-relaxed transition-all duration-200 shadow-sm",
               isUser
-                ? "bg-primary text-primary-foreground rounded-br-md"
+                ? isEditing 
+                  ? "bg-primary/90 text-primary-foreground rounded-br-md ring-2 ring-primary/50"
+                  : "bg-primary text-primary-foreground rounded-br-md"
                 : "bg-muted/50 border rounded-bl-md"
             )}
           >
             {/* Message Text or Edit Input */}
             <div className="break-words">
+              {/* Edit indicator for edited messages */}
+              {isUser && isEdited && !isEditing && (
+                <div className="mb-2 text-xs text-muted-foreground/60 italic border-l-2 border-muted/30 pl-2 group relative">
+                  <span className="cursor-help flex items-center gap-1">
+                    <span>✏️</span>
+                    <span>Message edited at {formatTime(message.updated_at || new Date())}</span>
+                  </span>
+                  <div className="absolute bottom-full left-0 mb-2 p-2 bg-muted/90 border rounded-md text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 shadow-lg">
+                    <div className="font-medium mb-1">Original message:</div>
+                    <div className="text-muted-foreground">
+                      "{message.text?.substring(0, 50)}{message.text && message.text.length > 50 ? '...' : ''}"
+                    </div>
+                  </div>
+                </div>
+              )}
               {isUser && isEditing ? (
-                <div className="flex flex-col gap-2">
-                  <textarea
-                    className="w-full rounded border p-2 text-sm text-foreground bg-background"
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    rows={2}
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" className="bg-gray-800" onClick={handleResubmitQuery}>
-                      Resubmit
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => setIsEditing(false)}>
-                      Cancel
-                    </Button>
+                <div className="flex flex-col gap-3">
+                  <div className="relative">
+                    <textarea
+                      className="w-full rounded border p-3 text-sm text-foreground bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onKeyDown={handleEditKeyDown}
+                      rows={Math.max(2, Math.min(editValue.split('\n').length + 1, 6))}
+                      placeholder="Edit your message..."
+                      autoFocus
+                    />
+                    <div className={cn(
+                      "absolute bottom-2 right-2 text-xs transition-colors",
+                      editValue.length > 900 ? "text-orange-500" : 
+                      editValue.length > 1000 ? "text-red-500" : 
+                      "text-muted-foreground"
+                    )}>
+                      {editValue.length}/1000
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2 justify-end">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={handleCancelEdit}
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={handleResubmitQuery}
+                        disabled={!editValue.trim() || isSubmitting}
+                        className="gap-2"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-3 w-3" />
+                            Send
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground/60 text-black text-center">
+                      💡 Press Enter to send, Shift+Enter for new line, Esc to cancel
+                    </div>
+                    {isSubmitting && (
+                      <div className="text-xs text-primary/70 text-center animate-pulse">
+                        📤 Sending edited message...
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -261,9 +378,16 @@ const ChatMessage: React.FC = () => {
 
           {/* Timestamp and Actions */}
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs text-muted-foreground/70">
-              {formatTime(message.created_at || new Date())}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground/70">
+                {formatTime(message.created_at || new Date())}
+              </span>
+              {isEdited && (
+                <span className="text-xs text-muted-foreground/50 italic">
+                  (edited)
+                </span>
+              )}
+            </div>
 
             {/* Message Actions */}
             <div className={cn(
@@ -327,15 +451,28 @@ const ChatMessage: React.FC = () => {
               {/* User message actions (edit, copy query) */}
               {isUser && !!message.text && !isEditing && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    className="h-6 px-2 text-xs rounded-md gap-1 transition-colors text-muted-foreground hover:text-blue-600 hover:bg-muted"
-                  >
-                    <Edit3 className="h-3 w-3" />
-                    <span>Edit</span>
-                  </Button>
+                  {canEdit ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                      className="h-6 px-2 text-xs rounded-md gap-1 transition-colors text-muted-foreground hover:text-blue-600 hover:bg-muted"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                      <span>Edit</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled
+                      className="h-6 px-2 text-xs rounded-md gap-1 transition-colors text-muted-foreground/50 cursor-not-allowed"
+                      title="Messages can only be edited within 24 hours"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                      <span>Edit</span>
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
