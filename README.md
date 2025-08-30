@@ -10,7 +10,6 @@ A modern AI-powered chat application built with React, TypeScript, and Stream Ch
 - **Smart Writing Help**: Get assistance with business emails, content creation, and creative writing
 - **Real-time Responses**: AI generates responses as you type
 - **Context Awareness**: Maintains conversation context for better assistance
-- **Multiple AI Models**: Support for OpenAI and Google Gemini
 
 ### 💬 Real-time Chat
 - **Instant Messaging**: Real-time message delivery with Stream Chat
@@ -67,12 +66,12 @@ A modern AI-powered chat application built with React, TypeScript, and Stream Ch
    ```bash
    # Client (.env)
    VITE_STREAM_API_KEY=your_stream_chat_api_key
-   VITE_BACKEND_URL=http://localhost:3001
+   VITE_BACKEND_URL=http://localhost:3000
    
    # Server (.env)
    STREAM_API_KEY=your_stream_chat_api_key
    STREAM_API_SECRET=your_stream_chat_api_secret
-   OPENAI_API_KEY=your_openai_api_key
+   TAVILY_API_KEY=your_tavily_api_key
    GEMINI_API_KEY=your_gemini_api_key
    ```
 
