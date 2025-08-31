@@ -509,7 +509,7 @@ const ChatMessage: React.FC = () => {
               </span>
               {isEdited && (
                 <span className="text-xs text-muted-foreground/50 italic">
-                  (edited)
+                  {/* (edited) */}
                 </span>
               )}
             </div>

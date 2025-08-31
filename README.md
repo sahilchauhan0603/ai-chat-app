@@ -73,6 +73,10 @@ A modern AI-powered chat application built with React, TypeScript, and Stream Ch
    STREAM_API_SECRET=your_stream_chat_api_secret
    TAVILY_API_KEY=your_tavily_api_key
    GEMINI_API_KEY=your_gemini_api_key
+   GEMINI_MODEL=gemini-2.5-pro
+   GEMINI_TEMPERATURE=0.7
+   GEMINI_TOP_P=0.95
+   GEMINI_TOP_K=40
    ```
 
 4. **Run the application**
@@ -116,12 +120,33 @@ A modern AI-powered chat application built with React, TypeScript, and Stream Ch
 ### AI Models
 - **OpenAI GPT-4**: Advanced language model for writing assistance
 - **Google Gemini**: Alternative AI model for diverse responses
+  - **Model**: Configurable (default: `gemini-2.5-pro`)
+  - **Temperature**: Controls creativity (default: `0.7`)
+  - **Top-P**: Controls response diversity (default: `0.95`)
+  - **Top-K**: Controls vocabulary selection (default: `40`)
 - **Web Search**: Real-time information gathering capabilities
 
 ### File Support
 - **Images**: JPG, PNG, GIF, BMP, WebP
 - **Documents**: PDF, DOC, DOCX, TXT, MD
 - **Size Limits**: Configurable file size restrictions
+
+### Gemini AI Configuration
+You can customize the Gemini AI behavior by setting these environment variables:
+
+```bash
+# Model selection (default: gemini-2.5-pro)
+GEMINI_MODEL=gemini-2.5-pro
+
+# Response creativity (0.0 = focused, 1.0 = creative, default: 0.7)
+GEMINI_TEMPERATURE=0.7
+
+# Response diversity (0.0 = deterministic, 1.0 = diverse, default: 0.95)
+GEMINI_TOP_P=0.95
+
+# Vocabulary selection (higher = more diverse, default: 40)
+GEMINI_TOP_K=40
+```
 
 ## 📱 Usage
 

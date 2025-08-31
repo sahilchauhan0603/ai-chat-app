@@ -36,13 +36,25 @@ export class GeminiAgent implements AIAgent {
       throw new Error("Gemini API key is required");
     }
 
+    // Get model name from environment or default to Gemini 2.5 Pro
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-pro";
+    
+    console.log(`[GeminiAgent] Initializing with model: ${modelName}`);
+    
+    // Get configuration from environment or use defaults
+    const temperature = parseFloat(process.env.GEMINI_TEMPERATURE || "0.7");
+    const topP = parseFloat(process.env.GEMINI_TOP_P || "0.95");
+    const topK = parseInt(process.env.GEMINI_TOP_K || "40");
+    
+    console.log(`[GeminiAgent] Configuration: temperature=${temperature}, topP=${topP}, topK=${topK}`);
+    
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: modelName,
       generationConfig: {
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 40,
+        temperature,
+        topP,
+        topK,
       },
     });
 
@@ -59,9 +71,9 @@ export class GeminiAgent implements AIAgent {
         },
       ],
       generationConfig: {
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 40,
+        temperature,
+        topP,
+        topK,
       },
     });
 
