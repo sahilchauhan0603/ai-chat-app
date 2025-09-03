@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Square, X, Paperclip, Sparkles, Loader2, FileText, Image, File, Trash2 } from "lucide-react";
+import { ArrowRight, Square, X, Paperclip, Sparkles, Loader2, FileText, Image, File, Trash2, Mic, MicOff } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { WritingPromptsToolbar } from "./writing-prompts-toolbar";
 
@@ -42,9 +42,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [isComposing, setIsComposing] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const internalTextareaRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalTextareaRef || internalTextareaRef;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const handlePromptSelect = (prompt: string) => {
     onValueChange(value ? `${value.trim()} ${prompt}` : prompt);
@@ -136,6 +139,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     e.preventDefault();
     if ((!value.trim() && uploadedFiles.length === 0) || isLoading || isGenerating || !sendMessage || isComposing) return;
 
+    // Stop speech recognition if active
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+
     setIsLoading(true);
     try {
       await sendMessage({
@@ -176,9 +184,65 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const isSendDisabled = (!value.trim() && uploadedFiles.length === 0) || isLoading || isGenerating || isComposing;
 
-  // Cleanup file previews on unmount
+  // Initialize speech recognition
   useEffect(() => {
+    // Check if browser supports the Web Speech API
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      console.warn("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    // Initialize speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+    
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      
+      // Update the input value with the transcribed text
+      if (finalTranscript) {
+        onValueChange(value + finalTranscript);
+      }
+      setTranscript(interimTranscript);
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      setIsListening(false);
+    };
+    
+    recognition.onend = () => {
+      setIsListening(false);
+      setTranscript("");
+    };
+    
+    recognitionRef.current = recognition;
+    
     return () => {
+      // Stop recognition on unmount
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      
+      // Cleanup file previews on unmount
       uploadedFiles.forEach(f => {
         if (f.preview) URL.revokeObjectURL(f.preview);
       });
@@ -314,6 +378,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.bmp,.webp"
                 multiple
               />
+              
+              {/* Voice input button */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  if (isListening && recognitionRef.current) {
+                    recognitionRef.current.stop();
+                  } else if (recognitionRef.current) {
+                    recognitionRef.current.start();
+                  }
+                }}
+                className={cn(
+                  "h-8 w-8 rounded-lg hover:bg-muted/80",
+                  isListening 
+                    ? "text-primary bg-primary/10" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title={isListening ? "Stop voice input" : "Start voice input"}
+                disabled={isLoading || isGenerating || !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
 
               {/* Send/Stop Button */}
               <div className="relative">
@@ -363,8 +451,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
         </form>
 
-        {/* Character count and file info */}
-        {(value.length > 0 || uploadedFiles.length > 0) && (
+        {/* Character count, file info, and voice status */}
+        {(value.length > 0 || uploadedFiles.length > 0 || isListening) && (
           <div className="mt-2 flex justify-between items-center px-1">
             <div className="flex items-center gap-4">
               {value.length > 0 && (
@@ -375,6 +463,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               {uploadedFiles.length > 0 && (
                 <p className="text-xs text-muted-foreground">
                   {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''} attached
+                </p>
+              )}
+              {isListening && (
+                <p className="text-xs text-primary animate-pulse flex items-center gap-1">
+                  <Mic className="h-3 w-3" /> Listening... {transcript && `"${transcript}"`}
                 </p>
               )}
             </div>
@@ -388,7 +481,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         {uploadedFiles.length === 0 && (
           <div className="mt-2 text-center">
             <p className="text-xs text-muted-foreground/60">
-              💡 Drag & drop files here or click the 📎 button to upload
+              {/* 💡 Drag & drop files here or click the 📎 button to upload */}
+              💡Upload Files (PDFs, Images, etc...)  &nbsp;&nbsp;&nbsp;&nbsp;  💡Give Voice Inputs
             </p>
           </div>
         )}

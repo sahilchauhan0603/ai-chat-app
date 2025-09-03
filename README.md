@@ -193,3 +193,76 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Made with ❤️ by [Your Name]**
 
 For support, email: support@yourdomain.com
+
+## UI Enhancements
+
+### Custom Scrollbar
+- Implemented custom scrollbar styling in `index.css` for improved visual appeal across WebKit and Firefox browsers, including width, height, track background, thumb color, opacity, border-radius, and hover effects.
+
+### Loading Animation
+- Created a new `LoadingAnimation` component in `src/components/ui/loading-animation.tsx` with customizable size and color, featuring spinning and pulsing CSS effects.
+- Integrated `LoadingAnimation` into `chat-message.tsx` to replace the previous loading state, enhancing visual feedback.
+
+### Animated Button
+- Developed an `AnimatedButton` component in `src/components/ui/animated-button.tsx` supporting various animation types (pulse, bounce, scale, glow) and a gradient variant for dynamic interactions.
+- Replaced the standard `Button` with `AnimatedButton` in `chat-input.tsx` for the send button, applying a `gradient` variant and `glow` animation when input is present.
+- Integrated `AnimatedButton` into `chat-interface.tsx` for prompt suggestion buttons, using an `outline` variant and `scale` animation for consistency and dynamism.
+
+### Animated Card
+- Introduced an `AnimatedCard` component in `src/components/ui/animated-card.tsx` with animation types (hover, pulse, none) and variants (default, outline, ghost) to enhance UI elements.
+- Utilized `AnimatedCard` in `chat-interface.tsx` for the `MessageListEmptyIndicator`, replacing the static div with a `ghost` variant and `pulse` animation for a more engaging empty state.
+
+### Theme Toggle
+- Created a `ThemeToggle` component in `src/components/ui/theme-toggle.tsx` for animated light/dark mode switching, leveraging `next-themes` and `lucide-react` for icons and smooth transitions.
+- Integrated `ThemeToggle` into the header of `chat-interface.tsx` alongside `AIAgentControl` to provide easy access to theme switching.
+
+## Server Explanations
+
+### `server/src/index.ts`
+- This file serves as the main entry point for the AI Writing Assistant server. It sets up the Express application, integrates middleware, and manages AI agent lifecycles.
+- Key functionalities include:
+    - **Initialization**: Sets up the Express app, body parsers, CORS, and initializes Stream Chat.
+    - **AI Agent Management**: Uses `aiAgentCache` to store active AI agents and `pendingAiAgents` to track agents being created. Implements an inactivity timer to dispose of agents after 5 minutes of inactivity.
+    - **API Endpoints**:
+        - `GET /`: Basic health check endpoint.
+        - `POST /start-ai-agent`: Initiates an AI agent for a given user and channel, creating a new agent if one doesn't exist or reactivating an existing one.
+        - `POST /stop-ai-agent`: Stops and disposes of an AI agent for a specific channel.
+        - `GET /agent-status`: Retrieves the current status of an AI agent for a given channel.
+        - `POST /token`: Generates a client-side token for Stream Chat authentication.
+    - **`disposeAiAgent` Function**: Handles the cleanup of AI agent resources, including stopping the agent and removing it from the cache.
+    - **Server Startup**: Starts the Express server and listens for incoming requests on the configured port.
+
+### `server/src/agents/createAgent.ts`
+- This file contains the `createAgent` function, responsible for initializing and configuring AI agents based on the specified platform (e.g., `gemini`).
+- Key functionalities include:
+    - **Imports**: Imports necessary modules like `StreamChat`, `AIWritingAgent`, and `AgentPlatform`.
+    - **`createAgent` Function**: Takes `user_id`, `channel_id`, and `platform` as parameters.
+    - **Stream Chat Initialization**: Initializes the Stream Chat client with API key and secret.
+    - **User Connection**: Connects the specified user to Stream Chat.
+    - **Channel Watching**: Sets up a channel watcher to monitor messages in the given channel.
+    - **Agent Instantiation**: Creates an instance of `AIWritingAgent` based on the provided `platform`.
+    - **Return Value**: Returns the initialized `AIWritingAgent` instance.
+
+### `server/src/agents/types.ts`
+- This file defines the TypeScript interfaces and enums used for AI agents and messages within the application.
+- Key definitions include:
+    - **`AIAgent` Interface**: Defines the structure for an AI agent, including properties like `id`, `platform`, `status`, and methods for starting and stopping the agent.
+    - **`AgentPlatform` Enum**: Enumerates the supported AI agent platforms (e.g., `gemini`).
+    - **`WritingMessage` Interface**: Describes the structure of a message, including `id`, `text`, `user`, and `timestamp`.
+
+## Data Persistence
+
+This project leverages Stream Chat for user state and conversation history persistence, rather than a traditional database. Here's how it works:
+
+1.  **User Authentication and Token Generation**: When a user interacts with the application, a `user_id` is generated (as seen in <mcfile name="index.ts" path="server/src/index.ts"></mcfile> in the `/start-ai-agent` and `/token` endpoints). This `user_id` is then used to create a secure token via `serverClient.createToken(userId)`. This token is essential for authenticating the user with the Stream Chat service.
+
+2.  **Stream Chat as the Backend**: Instead of storing messages and user data in a local database, the application offloads this responsibility to Stream Chat. When you send a message, it's sent to the Stream Chat API, which then stores it in its own highly scalable and persistent infrastructure. This includes:
+    -   **User Profiles**: Stream Chat maintains user profiles, including their `user_id` and any associated metadata.
+    -   **Channel Data**: Each conversation is essentially a "channel" in Stream Chat. All messages sent within a channel are stored by Stream Chat.
+    -   **Message History**: When you reconnect to a channel, Stream Chat provides the entire message history, making it appear as if your conversations are being saved locally.
+
+3.  **AI Agent Management**: The server-side logic (<mcfile name="index.ts" path="server/src/index.ts"></mcfile>) manages the lifecycle of AI agents. While `aiAgentCache` and `pendingAiAgents` are in-memory caches on your server, they are primarily for managing the active instances of the AI agents and their immediate state (like inactivity). The actual conversation data that the AI agent processes and generates is sent to and stored by Stream Chat.
+
+4.  **Client-Side Connection**: On the client side, the StreamChat client (<mcfile name="main.tsx" path="client/src/main.tsx"></mcfile> and `chat-provider.tsx`) connects to Stream Chat using the generated token. This connection allows the client to subscribe to channel updates, send messages, and retrieve past messages from Stream Chat's servers.
+
+In summary, the persistence of user state and conversations is achieved by leveraging Stream Chat as a robust, cloud-based backend for all chat-related data. Your local application acts as a client that interacts with this service, rather than managing its own database for chat history.

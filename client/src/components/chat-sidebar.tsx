@@ -20,7 +20,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  Pencil,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { Channel, ChannelFilters, ChannelSort } from "stream-chat";
 import { ChannelList, useChatContext } from "stream-chat-react";
@@ -70,6 +80,10 @@ export const ChatSidebar = ({
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [channelToRename, setChannelToRename] = useState<Channel | null>(null);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -103,6 +117,35 @@ export const ChatSidebar = ({
     setActiveChannel(channel);
     navigate(`/chat/${channel.id}`);
     if (!isDesktop) onClose();
+  };
+
+  const handleRenameClick = (channel: Channel, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setChannelToRename(channel);
+    setNewChannelName(channel.data?.name || "New Writing Session");
+    setShowRenameDialog(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (channelToRename && newChannelName.trim()) {
+      try {
+        setIsRenaming(true);
+        // Update the channel with the new name without sending a message
+        await channelToRename.update({ name: newChannelName.trim() });
+        setIsRenaming(false);
+        setShowRenameDialog(false);
+        setChannelToRename(null);
+      } catch (error) {
+        console.error("Error renaming channel:", error);
+        setIsRenaming(false);
+      }
+    }
+  };
+
+  const handleRenameCancel = () => {
+    setShowRenameDialog(false);
+    setChannelToRename(null);
+    setNewChannelName("");
   };
 
   return (
@@ -193,18 +236,29 @@ export const ChatSidebar = ({
                     <span className="flex-1 truncate text-sm font-medium">
                       {previewProps.channel.data?.name || "New Writing Session"}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        onChannelDelete(previewProps.channel);
-                      }}
-                      title="Delete writing session"
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground/70 hover:text-destructive" />
-                    </Button>
+                    <div className="absolute right-1 flex opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 mr-1"
+                        onClick={(e) => handleRenameClick(previewProps.channel, e)}
+                        title="Rename writing session"
+                      >
+                        <Pencil className="h-4 w-4 text-muted-foreground/70 hover:text-primary" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          onChannelDelete(previewProps.channel);
+                        }}
+                        title="Delete writing session"
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground/70 hover:text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               />
@@ -285,6 +339,47 @@ export const ChatSidebar = ({
           </DropdownMenu>
         </div>
       </div>
+      {/* Rename Chat Dialog */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Writing Session</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="channel-name" className="text-sm font-medium">
+              Name
+            </Label>
+            <Input
+              id="channel-name"
+              value={newChannelName}
+              onChange={(e) => setNewChannelName(e.target.value)}
+              placeholder="Enter a name for this writing session"
+              className="mt-1.5"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isRenaming) {
+                  handleRenameConfirm();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleRenameCancel} disabled={isRenaming}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameConfirm} disabled={!newChannelName.trim() || isRenaming}>
+              {isRenaming ? (
+                <>
+                  <span className="mr-2">Renaming</span>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                </>
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

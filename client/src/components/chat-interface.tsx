@@ -7,8 +7,9 @@ import {
   Menu,
   MessageSquare,
   Sparkles,
+  ArrowDown,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Channel,
   MessageList,
@@ -196,15 +197,106 @@ const MessageListEmptyIndicator = () => (
 const MessageListContent = () => {
   const { messages, thread } = useChannelStateContext();
   const isThread = !!thread;
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Function to scroll to bottom of message list
+  const scrollToBottom = () => {
+    // Find the actual scrollable element within Stream Chat's structure
+    const scrollableElement = containerRef.current?.querySelector('.str-chat__list') || 
+                             containerRef.current?.querySelector('[data-testid="message-list-inner"]') ||
+                             containerRef.current;
+    
+    if (scrollableElement) {
+      scrollableElement.scrollTo({
+        top: scrollableElement.scrollHeight,
+        behavior: 'smooth'
+      });
+      // Hide button after scrolling
+      setShowScrollButton(false);
+    }
+  };
+
+  // Handle scroll events to show/hide the scroll button
+  const handleScroll = (event: Event) => {
+    const target = event.target as HTMLElement;
+    const { scrollTop, scrollHeight, clientHeight } = target;
+    // Show button when scrolled up more than 100px from bottom
+    const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
+    setShowScrollButton(isScrolledUp);
+  };
+
+  // Check scroll position and show/hide button
+  const checkScrollPosition = () => {
+    const scrollableElement = containerRef.current?.querySelector('.str-chat__list') || 
+                             containerRef.current?.querySelector('[data-testid="message-list-inner"]') ||
+                             containerRef.current;
+    
+    if (scrollableElement && messages?.length) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollableElement;
+      const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
+      console.log('Scroll check:', { scrollTop, scrollHeight, clientHeight, isScrolledUp, messagesLength: messages.length });
+      setShowScrollButton(isScrolledUp);
+    } else {
+      // If we can't find scrollable element, don't show button
+      setShowScrollButton(false);
+    }
+  };
+
+  // Check if we need to show scroll button when messages change
+  React.useEffect(() => {
+    if (messages?.length) {
+      // Small delay to ensure DOM is updated
+      setTimeout(checkScrollPosition, 100);
+      // Also check after a longer delay in case DOM takes time to render
+      setTimeout(checkScrollPosition, 500);
+    }
+  }, [messages?.length]);
+
+  // Initial scroll position check when component mounts
+  React.useEffect(() => {
+    if (messages?.length) {
+      // Small delay to ensure DOM is fully rendered
+      setTimeout(checkScrollPosition, 200);
+      setTimeout(checkScrollPosition, 1000);
+    }
+  }, []);
+
+
+
+  // Add scroll listener to the actual scrollable element
+  React.useEffect(() => {
+    const scrollableElement = containerRef.current?.querySelector('.str-chat__list') || 
+                             containerRef.current?.querySelector('[data-testid="message-list-inner"]');
+    
+    if (scrollableElement) {
+      scrollableElement.addEventListener('scroll', handleScroll);
+      return () => {
+        scrollableElement.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, [messages?.length]);
 
   if (isThread) return null;
 
   return (
-    <div className="flex-1 min-h-0">
+    <div className="flex-1 min-h-0 relative" ref={containerRef}>
       {!messages?.length ? (
         <MessageListEmptyIndicator />
       ) : (
-        <MessageList Message={ChatMessage} />
+        <>
+          <MessageList Message={ChatMessage} />
+          {showScrollButton && (
+            <Button
+              className="absolute bottom-4 right-6 h-10 w-10 rounded-full shadow-lg bg-gray-900 text-primary-foreground z-50 flex items-center justify-center "
+              size="icon"
+              onClick={scrollToBottom}
+              title="Scroll to bottom"
+            >
+              <ArrowDown className="h-5 w-5" />
+            </Button>
+          )}
+        </>
       )}
     </div>
   );
