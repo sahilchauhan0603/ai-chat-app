@@ -266,3 +266,12 @@ This project leverages Stream Chat for user state and conversation history persi
 4.  **Client-Side Connection**: On the client side, the StreamChat client (<mcfile name="main.tsx" path="client/src/main.tsx"></mcfile> and `chat-provider.tsx`) connects to Stream Chat using the generated token. This connection allows the client to subscribe to channel updates, send messages, and retrieve past messages from Stream Chat's servers.
 
 In summary, the persistence of user state and conversations is achieved by leveraging Stream Chat as a robust, cloud-based backend for all chat-related data. Your local application acts as a client that interacts with this service, rather than managing its own database for chat history.
+
+
+## Room, Channel and Session
+
+- Room: A user-facing term for a private conversation space. In this app, a “room” is just a Stream Chat channel shown in the UI (e.g., a “Writing Session” in the sidebar).
+
+- Channel: The Stream Chat object that stores one conversation’s state—ID, members, messages, attachments, typing, etc. We create a messaging channel (UUID), add the user, then attach the AI agent via the backend `/start-ai-agent` flow. Routes map to it as `/chat/:channelId`.
+
+- Session: The product term “Writing Session,” i.e., one persisted channel used for a specific task or thread. Sessions appear in the sidebar, can be renamed/deleted, have per-session AI controls (connect/disconnect, status), and keep their own history and members (user + AI).

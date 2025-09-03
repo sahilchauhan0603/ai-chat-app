@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Bot, Check, Copy, ThumbsUp, ThumbsDown, Edit3, User, Send, Download, Eye, FileText, Image, File, X } from "lucide-react";
+import { Bot, Check, Copy, ThumbsUp, ThumbsDown, Edit3, User, Send, Eye, FileText, Image, File, X } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -35,14 +35,31 @@ const FileAttachment: React.FC<{ attachment: any }> = ({ attachment }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleDownload = () => {
-    if (attachment.asset_url) {
-      const link = document.createElement('a');
-      link.href = attachment.asset_url;
-      link.download = attachment.title || 'download';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const [copiedImage, setCopiedImage] = useState(false);
+
+  const handleCopyImage = async () => {
+    try {
+      // Prefer copying the actual bitmap if possible
+      if (attachment.image_url) {
+        const response = await fetch(attachment.image_url, { mode: 'cors' });
+        const blob = await response.blob();
+        const ClipboardItemCtor = (window as any).ClipboardItem;
+        if (navigator.clipboard && ClipboardItemCtor) {
+          const item = new ClipboardItemCtor({ [blob.type]: blob });
+          await (navigator as any).clipboard.write([item]);
+          setCopiedImage(true);
+          setTimeout(() => setCopiedImage(false), 1500);
+          return;
+        }
+      }
+      // Fallback: copy the image URL
+      if (attachment.image_url) {
+        await navigator.clipboard.writeText(attachment.image_url);
+        setCopiedImage(true);
+        setTimeout(() => setCopiedImage(false), 1500);
+      }
+    } catch (e) {
+      // Silently fail; in production you could surface a toast
     }
   };
 
@@ -92,15 +109,21 @@ const FileAttachment: React.FC<{ attachment: any }> = ({ attachment }) => {
               <Eye className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDownload}
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            title="Download"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
+          {isImage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyImage}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              title={copiedImage ? "Copied" : "Copy image"}
+            >
+              {copiedImage ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
 

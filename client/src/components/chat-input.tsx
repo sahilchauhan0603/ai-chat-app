@@ -135,6 +135,27 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    const items = Array.from(clipboardData.items || []);
+    const imageFiles: File[] = [];
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      handleFileUpload(imageFiles);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!value.trim() && uploadedFiles.length === 0) || isLoading || isGenerating || !sendMessage || isComposing) return;
@@ -346,6 +367,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               value={value}
               onChange={(e) => onValueChange(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               onCompositionStart={handleCompositionStart}
               onCompositionEnd={handleCompositionEnd}
               onFocus={() => setIsFocused(true)}
