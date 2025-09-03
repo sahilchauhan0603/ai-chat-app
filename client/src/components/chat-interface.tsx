@@ -395,11 +395,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               )}
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">
+              {/* <h2 className="text-sm font-semibold text-foreground">
                 {channel?.data?.name || "New Writing Session"}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                AI Writing Assistant • Always improving
+              </h2> */}
+              <p className="text-xs font-semibold text-foreground">
+                HelloAI
               </p>
             </div>
           </div>

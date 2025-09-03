@@ -329,7 +329,7 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
       </AlertDialog>
 
       {/* Global Styles for Animation */}
-      <style jsx>{`
+      {/* <style jsx>{`
         @keyframes spin-on-hover {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
@@ -337,7 +337,7 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
         .animate-spin-on-hover {
           animation: spin-on-hover 1s linear infinite;
         }
-      `}</style>
+      `}</style> */}
     </>
   );
 };
