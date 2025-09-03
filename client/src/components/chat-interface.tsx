@@ -8,6 +8,8 @@ import {
   MessageSquare,
   Sparkles,
   ArrowDown,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import React, { useRef, useState } from "react";
 import {
@@ -24,6 +26,7 @@ import { ChatInput, ChatInputProps } from "./chat-input";
 import ChatMessage from "./chat-message";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 interface ChatInterfaceProps {
   onToggleSidebar: () => void;
@@ -312,6 +315,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     channelId: channel?.id ?? null,
     backendUrl,
   });
+  const { aiState } = useAIState(channel);
+  const [showAiError, setShowAiError] = React.useState(true);
+
+  React.useEffect(() => {
+    // Show the banner whenever a new error state appears
+    const isError = aiState === "AI_STATE_ERROR";
+    setShowAiError(isError);
+    if (isError) {
+      try {
+        localStorage.setItem("aiTypingSuppressed", "1");
+      } catch {}
+    }
+  }, [aiState]);
 
   const ChannelMessageInputComponent = () => {
     const { sendMessage } = useChannelActionContext();
@@ -407,6 +423,26 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ) : (
           <Channel channel={channel}>
             <Window>
+              {aiState === "AI_STATE_ERROR" && showAiError && (
+                <div className="px-4 pt-3">
+                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>AI temporarily unavailable</AlertTitle>
+                    <AlertDescription>
+                      The AI is overloaded right now. Please try again in a moment.
+                    </AlertDescription>
+                    <Button
+                      // variant="ghost"
+                      // size="icon"
+                      className="absolute right-6 top-6 h-6 w-6 bg-desctructive hover:bg-desctructive/80 text-destructive hover:text-destructive/80"
+                      onClick={() => setShowAiError(false)}
+                      title="Dismiss"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </Alert>
+                </div>
+              )}
               <MessageListContent />
               <ChannelMessageInputComponent />
             </Window>

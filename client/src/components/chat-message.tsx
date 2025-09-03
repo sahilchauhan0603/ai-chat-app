@@ -165,6 +165,20 @@ const ChatMessage: React.FC = () => {
   // Check if message has attachments
   const hasAttachments = message.attachments && message.attachments.length > 0;
 
+  // Only the most recent pending AI message should show typing dots
+  const { messages } = useChannelStateContext();
+  const lastAIBotMessageId = React.useMemo(() => {
+    const aiMessages = [...(messages || [])].filter(
+      (m) => m.user?.id?.startsWith("ai-bot")
+    );
+    return aiMessages.length ? aiMessages[aiMessages.length - 1].id : undefined;
+  }, [messages]);
+  const isCurrentPendingAIMessage =
+    !isUser &&
+    message.user?.id?.startsWith("ai-bot") &&
+    message.id === lastAIBotMessageId &&
+    !(message.text && message.text.length > 0);
+
   // Auto-scroll to bottom when new message streams in
   useEffect(() => {
     if (streamedMessageText && !isUser && messageEndRef.current) {
@@ -485,7 +499,19 @@ const ChatMessage: React.FC = () => {
               )}
 
               {/* Loading State */}
-              {aiState && !streamedMessageText && !message.text && (
+              {(() => {
+                const suppressed = (() => {
+                  try { return localStorage.getItem("aiTypingSuppressed") === "1"; } catch { return false; }
+                })();
+                return (
+                  aiState &&
+                  aiState !== "AI_STATE_ERROR" &&
+                  !suppressed &&
+                  !streamedMessageText &&
+                  !message.text &&
+                  isCurrentPendingAIMessage
+                );
+              })() && (
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
                   <div className="flex space-x-1.5">
                     <div className="w-2 h-2 bg-current rounded-full animate-bounce opacity-60"></div>

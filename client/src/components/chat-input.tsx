@@ -144,11 +144,40 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       recognitionRef.current.stop();
     }
 
+    // User is retrying; allow thinking dots again
+    try { localStorage.removeItem("aiTypingSuppressed"); } catch {}
     setIsLoading(true);
     try {
-      await sendMessage({
+      // Build Stream-compatible attachments for images as data URLs (so server can read)
+      const imageFiles = uploadedFiles.filter(f => f.type === 'image');
+      const otherFiles = uploadedFiles.filter(f => f.type !== 'image');
+
+      const toDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const imageAttachments = await Promise.all(
+        imageFiles.map(async ({ file }) => {
+          const dataUrl = await toDataUrl(file);
+          return {
+            type: 'image',
+            image_url: dataUrl,
+            mime_type: file.type,
+            fallback: file.name,
+          } as any;
+        })
+      );
+
+      // Send message; Stream's sendMessage will accept attachments, and
+      // our server agent will read data URLs from attachments
+      await (sendMessage as any)({
         text: value.trim(),
-        files: uploadedFiles.map(f => f.file)
+        attachments: imageAttachments.length ? imageAttachments : undefined,
+        // keep original files for any custom handling upstream
+        files: uploadedFiles.map(f => f.file),
       });
       onValueChange("");
       // Clear uploaded files

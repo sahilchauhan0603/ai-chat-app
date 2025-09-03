@@ -111,8 +111,7 @@ export class GeminiAgent implements AIAgent {
       return;
     }
 
-    const message = e.message.text;
-    if (!message) return;
+    const message = e.message.text || "";
 
     this.lastInteractionTs = Date.now();
 
@@ -120,6 +119,21 @@ export class GeminiAgent implements AIAgent {
       ?.writingTask;
     const context = writingTask ? `Writing Task: ${writingTask}` : undefined;
     const instructions = this.getWritingAssistantPrompt(context);
+    const attachments = (e.message.attachments as any[]) || [];
+    const imageParts: any[] = [];
+    for (const att of attachments) {
+      // Expecting { type: 'image', image_url: 'data:mime;base64,...' }
+      if (att?.type === 'image' && typeof att?.image_url === 'string' && att.image_url.startsWith('data:')) {
+        try {
+          const match = att.image_url.match(/^data:(.*?);base64,(.*)$/);
+          if (match) {
+            const mimeType = match[1];
+            const data = match[2];
+            imageParts.push({ inlineData: { mimeType, data } });
+          }
+        } catch {}
+      }
+    }
 
     const { message: channelMessage } = await this.channel.sendMessage({
       text: "",
@@ -134,7 +148,13 @@ export class GeminiAgent implements AIAgent {
     });
 
     try {
-      const result = await this.chatSession.sendMessageStream(message);
+      // Build Gemini parts: prompt + user text + any images
+      const parts: any[] = [];
+      parts.push({ text: instructions });
+      if (message) parts.push({ text: message });
+      if (imageParts.length) parts.push(...imageParts);
+
+      const result = await this.chatSession.sendMessageStream(parts);
 
       const handler = new GeminiResponseHandler(
         result.stream,
