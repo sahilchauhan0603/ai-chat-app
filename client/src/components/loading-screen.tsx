@@ -10,7 +10,13 @@ export const LoadingScreen = () => {
     "Loading language models...",
     "Setting up your writing environment...",
     "Almost ready to start creating...",
-    "Initializing creative tools..."
+    "Initializing creative tools...",
+    "Generating fresh ideas...",
+    "Tuning the creativity engine...",
+    "Organizing words and thoughts...",
+    "Optimizing for clarity and style...",
+    "Gathering writing magic...",
+    "Your assistant is almost here..."
   ];
 
   useEffect(() => {
@@ -52,7 +58,7 @@ export const LoadingScreen = () => {
           </div>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar
         <div className="space-y-2">
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div 
@@ -63,7 +69,7 @@ export const LoadingScreen = () => {
           <p className="text-xs text-muted-foreground">
             {Math.round(progress)}% complete
           </p>
-        </div>
+        </div> */}
 
         {/* Loading message with animation */}
         <div className="space-y-2">
