@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   LogOut,
@@ -213,58 +214,82 @@ export const ChatSidebar = ({
           </div>
         </div>
 
-        {/* Channel List */}
-        {!isCollapsed && (
-          <ScrollArea className="flex-1">
-            <div className="p-4 space-y-0">
-              <ChannelList
-                filters={filters}
-                sort={sort}
-                options={options}
-                EmptyStateIndicator={ChannelListEmptyStateIndicator}
-                Preview={(previewProps) => (
-                  <div
-                    className={cn(
-                      "flex items-center p-2 rounded-lg cursor-pointer transition-colors relative group mb-1",
-                      previewProps.active
-                        ? "bg-primary/20 text-primary-foreground"
-                        : "hover:bg-muted/50"
-                    )}
-                    onClick={() => handleChannelClick(previewProps.channel)}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="flex-1 truncate text-sm font-medium">
-                      {previewProps.channel.data?.name || "New Writing Session"}
-                    </span>
-                    <div className="absolute right-1 flex opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 mr-1"
-                        onClick={(e) => handleRenameClick(previewProps.channel, e)}
-                        title="Rename writing session"
-                      >
-                        <Pencil className="h-4 w-4 text-muted-foreground/70 hover:text-primary" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          onChannelDelete(previewProps.channel);
-                        }}
-                        title="Delete writing session"
-                      >
-                        <Trash2 className="h-4 w-4 text-muted-foreground/70 hover:text-destructive" />
-                      </Button>
+        {/* Channel List - keep mounted to avoid refetch on toggle */}
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-0">
+            <ChannelList
+              filters={filters}
+              sort={sort}
+              options={options}
+              EmptyStateIndicator={ChannelListEmptyStateIndicator}
+              Preview={(previewProps) => (
+                (() => {
+                  const channelName = previewProps.channel.data?.name || "New Writing Session";
+                  const isActive = previewProps.active;
+                  if (isCollapsed) {
+                    return (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                "flex items-center justify-center p-2 mb-1 rounded-lg cursor-pointer transition-colors",
+                                isActive ? "bg-primary/20" : "hover:bg-muted/50"
+                              )}
+                              onClick={() => handleChannelClick(previewProps.channel)}
+                              // title={channelName}
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">
+                            {channelName}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  }
+
+                  return (
+                    <div
+                      className={cn(
+                        "flex items-center p-2 rounded-lg cursor-pointer transition-colors relative group mb-1",
+                        isActive ? "bg-primary/20 text-primary-foreground" : "hover:bg-muted/50"
+                      )}
+                      onClick={() => handleChannelClick(previewProps.channel)}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="flex-1 truncate text-sm font-medium">{channelName}</span>
+                      <div className="absolute right-1 flex opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 mr-1"
+                          onClick={(e) => handleRenameClick(previewProps.channel, e)}
+                          title="Rename writing session"
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground/70 hover:text-primary" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            onChannelDelete(previewProps.channel);
+                          }}
+                          title="Delete writing session"
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground/70 hover:text-destructive" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              />
-            </div>
-          </ScrollArea>
-        )}
+                  );
+                })()
+              )}
+            />
+          </div>
+        </ScrollArea>
 
         {/* New Chat Button */}
         {!isCollapsed && (
