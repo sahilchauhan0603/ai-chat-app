@@ -238,7 +238,7 @@ const MessageListContent = () => {
     if (scrollableElement && messages?.length) {
       const { scrollTop, scrollHeight, clientHeight } = scrollableElement;
       const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
-      console.log('Scroll check:', { scrollTop, scrollHeight, clientHeight, isScrolledUp, messagesLength: messages.length });
+      // console.log('Scroll check:', { scrollTop, scrollHeight, clientHeight, isScrolledUp, messagesLength: messages.length });
       setShowScrollButton(isScrolledUp);
     } else {
       // If we can't find scrollable element, don't show button
@@ -341,7 +341,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       aiState === "AI_STATE_GENERATING" ||
       aiState === "AI_STATE_EXTERNAL_SOURCES";
 
-    console.log("aiState", aiState);
+    // console.log("aiState", aiState);
 
     const handleStopGenerating = () => {
       if (channel) {
