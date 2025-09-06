@@ -6,7 +6,7 @@ import { defineConfig } from "vite";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 9080,
   },
   plugins: [react()],
   resolve: {
