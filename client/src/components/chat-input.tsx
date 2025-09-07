@@ -3,6 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ArrowRight, Square, X, Paperclip, Sparkles, Loader2, FileText, Image, File, Trash2, Mic, MicOff } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useChannelStateContext } from "stream-chat-react";
 import { WritingPromptsToolbar } from "./writing-prompts-toolbar";
 
 export interface ChatInputProps {
@@ -37,6 +38,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   showPromptToolbar = false,
   onFileUpload,
 }) => {
+  const { channel } = useChannelStateContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
@@ -169,36 +171,49 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     try { localStorage.removeItem("aiTypingSuppressed"); } catch {}
     setIsLoading(true);
     try {
-      // Build Stream-compatible attachments for images as data URLs (so server can read)
+      // Prefer uploading files to Stream CDN to avoid large JSON payloads
       const imageFiles = uploadedFiles.filter(f => f.type === 'image');
       const otherFiles = uploadedFiles.filter(f => f.type !== 'image');
 
-      const toDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const imageAttachments = await Promise.all(
+      const uploadedImageAttachments = await Promise.all(
         imageFiles.map(async ({ file }) => {
-          const dataUrl = await toDataUrl(file);
+          if (!channel) return null;
+          const res = await (channel as any).sendImage?.(file);
+          const url = res?.file || res?.file_url || res?.file?.url;
+          if (!url) return null;
           return {
             type: 'image',
-            image_url: dataUrl,
+            image_url: url,
             mime_type: file.type,
             fallback: file.name,
           } as any;
         })
       );
 
-      // Send message; Stream's sendMessage will accept attachments, and
-      // our server agent will read data URLs from attachments
+      const uploadedFileAttachments = await Promise.all(
+        otherFiles.map(async ({ file }) => {
+          if (!channel) return null;
+          const res = await (channel as any).sendFile?.(file);
+          const url = res?.file || res?.file_url || res?.file?.url;
+          if (!url) return null;
+          return {
+            type: 'file',
+            asset_url: url,
+            mime_type: file.type,
+            title: file.name,
+            file_size: file.size,
+          } as any;
+        })
+      );
+
+      const attachments = [
+        ...uploadedImageAttachments.filter(Boolean),
+        ...uploadedFileAttachments.filter(Boolean),
+      ];
+
       await (sendMessage as any)({
         text: value.trim(),
-        attachments: imageAttachments.length ? imageAttachments : undefined,
-        // keep original files for any custom handling upstream
-        files: uploadedFiles.map(f => f.file),
+        attachments: attachments.length ? attachments : undefined,
       });
       onValueChange("");
       // Clear uploaded files

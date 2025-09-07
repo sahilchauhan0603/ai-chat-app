@@ -8,7 +8,9 @@ import { apiKey, serverClient } from "./serverClient"; // API key and Stream Cha
 
 // Initialize the Express application
 const app = express();
-app.use(express.json()); // Enable parsing of JSON request bodies
+// Increase body size limits to accommodate larger payloads if needed
+app.use(express.json({ limit: "10mb" })); // Enable parsing of JSON request bodies
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cors({ origin: "*" })); // Enable CORS for all origins
 
 // Map to store the AI Agent instances

@@ -1,4 +1,6 @@
 import { GoogleGenerativeAI, GenerativeModel, GenerationConfig } from "@google/generative-ai";
+import axios from "axios";
+import pdf from "pdf-parse";
 import type { Channel, DefaultGenerics, Event, StreamChat } from "stream-chat";
 import type { AIAgent } from "../types";
 import { GeminiResponseHandler } from "./GeminiResponseHandler";
@@ -121,8 +123,10 @@ export class GeminiAgent implements AIAgent {
     const instructions = this.getWritingAssistantPrompt(context);
     const attachments = (e.message.attachments as any[]) || [];
     const imageParts: any[] = [];
+    let extractedPdfText = "";
+
     for (const att of attachments) {
-      // Expecting { type: 'image', image_url: 'data:mime;base64,...' }
+      // Inline image data (legacy path)
       if (att?.type === 'image' && typeof att?.image_url === 'string' && att.image_url.startsWith('data:')) {
         try {
           const match = att.image_url.match(/^data:(.*?);base64,(.*)$/);
@@ -132,6 +136,28 @@ export class GeminiAgent implements AIAgent {
             imageParts.push({ inlineData: { mimeType, data } });
           }
         } catch {}
+      }
+
+      // Uploaded images/files via Stream CDN
+      if (att?.type === 'image' && typeof att?.image_url === 'string' && att.image_url.startsWith('http')) {
+        imageParts.push({ fileData: { mimeType: att.mime_type || 'image/*', fileUri: att.image_url } });
+      }
+
+      // PDF or other docs: try to fetch and extract text
+      const isPdf = (att?.mime_type?.includes('pdf')) || (att?.title?.endsWith?.('.pdf'));
+      const url = att?.asset_url || att?.file || att?.image_url;
+      if (isPdf && typeof url === 'string' && url.startsWith('http')) {
+        try {
+          const resp = await axios.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
+          const buffer = Buffer.from(resp.data);
+          const parsed = await pdf(buffer);
+          const text = (parsed.text || '').trim();
+          if (text.length > 0) {
+            extractedPdfText += `\n\n[Extracted from PDF ${att?.title || ''}]\n${text}`;
+          }
+        } catch (err) {
+          // Best effort: ignore fetch/parse errors and continue
+        }
       }
     }
 
@@ -148,10 +174,28 @@ export class GeminiAgent implements AIAgent {
     });
 
     try {
-      // Build Gemini parts: prompt + user text + any images
+      // If the user only uploaded a PDF with no extractable text and no message, reply clearly
+      const onlyPdfNoText = (!message || message.trim().length === 0) && !imageParts.length && extractedPdfText.trim().length === 0 && attachments.some(att => (att?.mime_type?.includes('pdf')) || (att?.title?.endsWith?.('.pdf')));
+      if (onlyPdfNoText) {
+        await this.chatClient.updateMessage({
+          id: channelMessage.id,
+          text: "Cannot parse PDF as there is no text.",
+          mentioned_users: [],
+        });
+        await this.channel.sendEvent({
+          type: "ai_indicator.update",
+          ai_state: "AI_STATE_DONE",
+          cid: channelMessage.cid,
+          message_id: channelMessage.id,
+        });
+        return;
+      }
+
+      // Build Gemini parts: prompt + user text + any images + extracted PDF text
       const parts: any[] = [];
       parts.push({ text: instructions });
       if (message) parts.push({ text: message });
+      if (extractedPdfText) parts.push({ text: extractedPdfText });
       if (imageParts.length) parts.push(...imageParts);
 
       const result = await this.chatSession.sendMessageStream(parts);
