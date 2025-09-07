@@ -1,4 +1,8 @@
-import { GoogleGenerativeAI, GenerativeModel, GenerationConfig } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  GenerativeModel,
+  GenerationConfig,
+} from "@google/generative-ai";
 import axios from "axios";
 import pdf from "pdf-parse";
 import type { Channel, DefaultGenerics, Event, StreamChat } from "stream-chat";
@@ -40,16 +44,18 @@ export class GeminiAgent implements AIAgent {
 
     // Get model name from environment or default to Gemini 2.5 Pro
     const modelName = process.env.GEMINI_MODEL || "gemini-2.5-pro";
-    
+
     console.log(`[GeminiAgent] Initializing with model: ${modelName}`);
-    
+
     // Get configuration from environment or use defaults
     const temperature = parseFloat(process.env.GEMINI_TEMPERATURE || "0.7");
     const topP = parseFloat(process.env.GEMINI_TOP_P || "0.95");
     const topK = parseInt(process.env.GEMINI_TOP_K || "40");
-    
-    console.log(`[GeminiAgent] Configuration: temperature=${temperature}, topP=${topP}, topK=${topK}`);
-    
+
+    console.log(
+      `[GeminiAgent] Configuration: temperature=${temperature}, topP=${topP}, topK=${topK}`
+    );
+
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
       model: modelName,
@@ -69,7 +75,11 @@ export class GeminiAgent implements AIAgent {
         },
         {
           role: "model",
-          parts: [{ text: "I'm here to help with your writing needs. What would you like assistance with?" }],
+          parts: [
+            {
+              text: "I'm here to help with your writing needs. What would you like assistance with?",
+            },
+          ],
         },
       ],
       generationConfig: {
@@ -100,7 +110,7 @@ export class GeminiAgent implements AIAgent {
 - Never begin responses with phrases like "Here's the edit:", "Here are the changes:", or similar introductory statements.
 - Provide responses directly and professionally without unnecessary preambles.
 
-**Writing Context**: ${context || "General writing assistance."}`;  
+**Writing Context**: ${context || "General writing assistance."}`;
   };
 
   private handleMessage = async (e: Event<DefaultGenerics>) => {
@@ -127,7 +137,11 @@ export class GeminiAgent implements AIAgent {
 
     for (const att of attachments) {
       // Inline image data (legacy path)
-      if (att?.type === 'image' && typeof att?.image_url === 'string' && att.image_url.startsWith('data:')) {
+      if (
+        att?.type === "image" &&
+        typeof att?.image_url === "string" &&
+        att.image_url.startsWith("data:")
+      ) {
         try {
           const match = att.image_url.match(/^data:(.*?);base64,(.*)$/);
           if (match) {
@@ -139,21 +153,33 @@ export class GeminiAgent implements AIAgent {
       }
 
       // Uploaded images/files via Stream CDN
-      if (att?.type === 'image' && typeof att?.image_url === 'string' && att.image_url.startsWith('http')) {
-        imageParts.push({ fileData: { mimeType: att.mime_type || 'image/*', fileUri: att.image_url } });
+      if (
+        att?.type === "image" &&
+        typeof att?.image_url === "string" &&
+        att.image_url.startsWith("http")
+      ) {
+        imageParts.push({
+          fileData: {
+            mimeType: att.mime_type || "image/*",
+            fileUri: att.image_url,
+          },
+        });
       }
 
       // PDF or other docs: try to fetch and extract text
-      const isPdf = (att?.mime_type?.includes('pdf')) || (att?.title?.endsWith?.('.pdf'));
+      const isPdf =
+        att?.mime_type?.includes("pdf") || att?.title?.endsWith?.(".pdf");
       const url = att?.asset_url || att?.file || att?.image_url;
-      if (isPdf && typeof url === 'string' && url.startsWith('http')) {
+      if (isPdf && typeof url === "string" && url.startsWith("http")) {
         try {
-          const resp = await axios.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
+          const resp = await axios.get<ArrayBuffer>(url, {
+            responseType: "arraybuffer",
+          });
           const buffer = Buffer.from(resp.data);
           const parsed = await pdf(buffer);
-          const text = (parsed.text || '').trim();
+          const text = (parsed.text || "").trim();
           if (text.length > 0) {
-            extractedPdfText += `\n\n[Extracted from PDF ${att?.title || ''}]\n${text}`;
+            extractedPdfText += `\n\n[Extracted from PDF ${att?.title || ""}]\n${text}`;
           }
         } catch (err) {
           // Best effort: ignore fetch/parse errors and continue
@@ -175,7 +201,14 @@ export class GeminiAgent implements AIAgent {
 
     try {
       // If the user only uploaded a PDF with no extractable text and no message, reply clearly
-      const onlyPdfNoText = (!message || message.trim().length === 0) && !imageParts.length && extractedPdfText.trim().length === 0 && attachments.some(att => (att?.mime_type?.includes('pdf')) || (att?.title?.endsWith?.('.pdf')));
+      const onlyPdfNoText =
+        (!message || message.trim().length === 0) &&
+        !imageParts.length &&
+        extractedPdfText.trim().length === 0 &&
+        attachments.some(
+          (att) =>
+            att?.mime_type?.includes("pdf") || att?.title?.endsWith?.(".pdf")
+        );
       if (onlyPdfNoText) {
         await this.chatClient.updateMessage({
           id: channelMessage.id,
@@ -198,14 +231,22 @@ export class GeminiAgent implements AIAgent {
       if (extractedPdfText) parts.push({ text: extractedPdfText });
       if (imageParts.length) parts.push(...imageParts);
 
-      const result = await this.chatSession.sendMessageStream(parts);
+      // Create AbortController
+      const abortController = new AbortController();
 
+      // Start streaming with cancellation support
+      const result = await this.chatSession.sendMessageStream(parts, {
+        signal: abortController.signal, // 👈 pass signal
+      });
+
+      // Pass abortController into the handler
       const handler = new GeminiResponseHandler(
         result.stream,
         this.chatClient,
         this.channel,
         channelMessage,
-        () => this.removeHandler(handler)
+        () => this.removeHandler(handler),
+        abortController // 👈 new argument
       );
       this.handlers.push(handler);
       void handler.run();

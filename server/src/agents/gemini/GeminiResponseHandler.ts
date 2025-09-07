@@ -12,7 +12,8 @@ export class GeminiResponseHandler {
     private readonly chatClient: StreamChat,
     private readonly channel: Channel,
     private readonly message: MessageResponse,
-    private readonly onDispose: () => void
+    private readonly onDispose: () => void,
+    private readonly abortController: AbortController // 👈 store controller
   ) {
     this.chatClient.on("ai_indicator.stop", this.handleStopGenerating);
   }
@@ -71,7 +72,9 @@ export class GeminiResponseHandler {
       }
     } catch (error) {
       console.error("Error processing Gemini response:", error);
-      await this.handleError(error instanceof Error ? error : new Error(String(error)));
+      await this.handleError(
+        error instanceof Error ? error : new Error(String(error))
+      );
     } finally {
       this.dispose();
     }
@@ -82,9 +85,9 @@ export class GeminiResponseHandler {
 
     try {
       await this.chatClient.updateMessage({
-        id: this.message.id,               // ✅ only ID required
-        text: this.message_text,           // ✅ updated text
-        mentioned_users: [],               // ✅ must be string[]
+        id: this.message.id, // ✅ only ID required
+        text: this.message_text, // ✅ updated text
+        mentioned_users: [], // ✅ must be string[]
       });
     } catch (error) {
       console.error("Error updating message:", error);
@@ -99,7 +102,9 @@ export class GeminiResponseHandler {
     try {
       await this.chatClient.updateMessage({
         id: this.message.id,
-        text: this.message_text || "I encountered an error while processing your request.",
+        text:
+          this.message_text ||
+          "I encountered an error while processing your request.",
         mentioned_users: [],
       });
 
@@ -127,8 +132,11 @@ export class GeminiResponseHandler {
     if (e.message_id !== this.message.id) return;
 
     this.is_done = true;
-    const { cid, id: message_id } = this.message;
 
+    // 👇 cancel Gemini request immediately
+    this.abortController.abort();
+
+    const { cid, id: message_id } = this.message;
     try {
       await this.channel.sendEvent({
         type: "ai_indicator.update",

@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 interface WritingPromptsToolbarProps {
   onPromptSelect: (prompt: string) => void;
   className?: string;
+  disabled?: boolean;   // NEW
 }
 
 const toolbarPrompts = [
@@ -110,6 +111,7 @@ const toolbarPrompts = [
 export const WritingPromptsToolbar: React.FC<WritingPromptsToolbarProps> = ({
   onPromptSelect,
   className = "",
+  disabled = false,  // NEW
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -225,7 +227,8 @@ export const WritingPromptsToolbar: React.FC<WritingPromptsToolbarProps> = ({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handlePromptSelect(prompt.text)}
+                                onClick={() => !disabled && handlePromptSelect(prompt.text)}
+                                disabled={disabled} 
                                 className="h-auto p-3 text-sm text-left justify-start hover:bg-muted/50 transition-colors"
                               >
                                 <div className={cn(
@@ -274,7 +277,8 @@ export const WritingPromptsToolbar: React.FC<WritingPromptsToolbarProps> = ({
                 <Button
                   variant={isExpanded ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={() => setIsExpanded(!isExpanded)}
+                  onClick={() => !disabled  && setIsExpanded(!isExpanded)}
+                  disabled={disabled}
                   className="h-8 px-2 sm:px-3 text-xs font-medium flex-shrink-0 gap-1.5"
                 >
                   {isExpanded ? (
@@ -303,7 +307,8 @@ export const WritingPromptsToolbar: React.FC<WritingPromptsToolbarProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onPromptSelect(prompt.text)}
+                          onClick={() => !disabled  && onPromptSelect(prompt.text)}
+                          disabled={disabled}
                           className="h-8 px-2 sm:px-3 text-xs whitespace-nowrap flex-shrink-0 hover:bg-muted/50 gap-1.5"
                         >
                           <IconComponent className="h-3.5 w-3.5" />

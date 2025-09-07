@@ -30,7 +30,10 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 interface ChatInterfaceProps {
   onToggleSidebar: () => void;
-  onNewChatMessage: (message: { text: string; files?: File[] }) => Promise<void>;
+  onNewChatMessage: (message: {
+    text: string;
+    files?: File[];
+  }) => Promise<void>;
   backendUrl: string;
 }
 
@@ -159,23 +162,23 @@ const EmptyStateWithInput: React.FC<{
 
       {/* Input Area */}
       {/* <div className="border-t bg-background/95 backdrop-blur-sm"> */}
-        <div>
-          <ChatInput
-            sendMessage={onNewChatMessage}
-            placeholder="Describe what you'd like to write, or paste text to improve..."
-            value={inputText}
-            onValueChange={setInputText}
-            className="!p-4"
-            isGenerating={false}
-            onStopGenerating={() => {}}
-          />
-          <div className="flex items-center justify-center gap-4 mb-2 text-xs text-muted-foreground">
-            <span>Press Enter to send</span>
-            <span>•</span>
-            <span>Shift + Enter for new line</span>
-          </div>
+      <div>
+        <ChatInput
+          sendMessage={onNewChatMessage}
+          placeholder="Describe what you'd like to write, or paste text to improve..."
+          value={inputText}
+          onValueChange={setInputText}
+          className="!p-4"
+          isGenerating={false}
+          onStopGenerating={() => {}}
+        />
+        <div className="flex items-center justify-center gap-4 mb-2 text-xs text-muted-foreground">
+          <span>Press Enter to send</span>
+          <span>•</span>
+          <span>Shift + Enter for new line</span>
         </div>
       </div>
+    </div>
     // </div>
   );
 };
@@ -206,14 +209,17 @@ const MessageListContent = () => {
   // Function to scroll to bottom of message list
   const scrollToBottom = () => {
     // Find the actual scrollable element within Stream Chat's structure
-    const scrollableElement = containerRef.current?.querySelector('.str-chat__list') || 
-                             containerRef.current?.querySelector('[data-testid="message-list-inner"]') ||
-                             containerRef.current;
-    
+    const scrollableElement =
+      containerRef.current?.querySelector(".str-chat__list") ||
+      containerRef.current?.querySelector(
+        '[data-testid="message-list-inner"]'
+      ) ||
+      containerRef.current;
+
     if (scrollableElement) {
       scrollableElement.scrollTo({
         top: scrollableElement.scrollHeight,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
       // Hide button after scrolling
       setShowScrollButton(false);
@@ -231,10 +237,13 @@ const MessageListContent = () => {
 
   // Check scroll position and show/hide button
   const checkScrollPosition = () => {
-    const scrollableElement = containerRef.current?.querySelector('.str-chat__list') || 
-                             containerRef.current?.querySelector('[data-testid="message-list-inner"]') ||
-                             containerRef.current;
-    
+    const scrollableElement =
+      containerRef.current?.querySelector(".str-chat__list") ||
+      containerRef.current?.querySelector(
+        '[data-testid="message-list-inner"]'
+      ) ||
+      containerRef.current;
+
     if (scrollableElement && messages?.length) {
       const { scrollTop, scrollHeight, clientHeight } = scrollableElement;
       const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
@@ -265,17 +274,16 @@ const MessageListContent = () => {
     }
   }, []);
 
-
-
   // Add scroll listener to the actual scrollable element
   React.useEffect(() => {
-    const scrollableElement = containerRef.current?.querySelector('.str-chat__list') || 
-                             containerRef.current?.querySelector('[data-testid="message-list-inner"]');
-    
+    const scrollableElement =
+      containerRef.current?.querySelector(".str-chat__list") ||
+      containerRef.current?.querySelector('[data-testid="message-list-inner"]');
+
     if (scrollableElement) {
-      scrollableElement.addEventListener('scroll', handleScroll);
+      scrollableElement.addEventListener("scroll", handleScroll);
       return () => {
-        scrollableElement.removeEventListener('scroll', handleScroll);
+        scrollableElement.removeEventListener("scroll", handleScroll);
       };
     }
   }, [messages?.length]);
@@ -336,6 +344,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const [inputText, setInputText] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    const [stopPressed, setStopPressed] = useState(false);
     // Primary signal from AI state events
     const aiStateGenerating =
       aiState === "AI_STATE_THINKING" ||
@@ -344,19 +353,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     // Fallback: detect pending AI message without text yet (stream just started)
     const hasPendingAIBotMessage = React.useMemo(() => {
-      const aiMessages = [...(messages || [])].filter(
-        (m) => m.user?.id?.startsWith("ai-bot")
+      const aiMessages = [...(messages || [])].filter((m) =>
+        m.user?.id?.startsWith("ai-bot")
       );
       if (!aiMessages.length) return false;
       const last = aiMessages[aiMessages.length - 1];
       return !last.text || last.text.length === 0;
     }, [messages]);
 
-    const isGenerating = aiStateGenerating || hasPendingAIBotMessage;
+    const isGenerating =
+      !stopPressed && (aiStateGenerating || hasPendingAIBotMessage);
 
     // console.log("aiState", aiState);
 
     const handleStopGenerating = () => {
+      setStopPressed(true); // ✅ disable generating immediately
       if (channel) {
         const aiMessage = [...messages]
           .reverse()
@@ -369,7 +380,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           });
         }
       }
+
+      // ✅ Force AI state reset locally
+      try {
+        localStorage.setItem("aiTypingSuppressed", "1");
+      } catch {}
     };
+
+    React.useEffect(() => {
+      if (!aiStateGenerating) {
+        setStopPressed(false); // ✅ allow future generations
+      }
+    }, [aiStateGenerating]);
 
     return (
       <ChatInput
@@ -411,9 +433,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {/* <h2 className="text-sm font-semibold text-foreground">
                 {channel?.data?.name || "New Writing Session"}
               </h2> */}
-              <p className="text-xs font-semibold text-foreground">
-                HelloAI
-              </p>
+              <p className="text-xs font-semibold text-foreground">HelloAI</p>
             </div>
           </div>
         </div>
@@ -438,11 +458,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <Window>
               {aiState === "AI_STATE_ERROR" && showAiError && (
                 <div className="px-4 pt-3">
-                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+                  <Alert
+                    variant="destructive"
+                    className="bg-destructive/10 border-destructive/30"
+                  >
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>AI temporarily unavailable</AlertTitle>
                     <AlertDescription>
-                      The AI is overloaded right now. Please try again in a moment.
+                      The AI is overloaded right now. Please try again in a
+                      moment.
                     </AlertDescription>
                     <Button
                       // variant="ghost"

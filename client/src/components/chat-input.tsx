@@ -322,7 +322,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       )}
     >
       {showPromptToolbar && (
-        <WritingPromptsToolbar onPromptSelect={handlePromptSelect} />
+        <WritingPromptsToolbar onPromptSelect={handlePromptSelect} disabled={isGenerating} />
       )}
       
       <div className={cn("p-4", className)}>
