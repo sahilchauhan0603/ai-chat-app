@@ -5,6 +5,7 @@ export class GeminiResponseHandler {
   private chunk_counter = 0;
   private is_done = false;
   private last_update_time = 0;
+  private has_announced_generating = false;
 
   constructor(
     private readonly responseStream: AsyncIterable<any>,
@@ -33,6 +34,22 @@ export class GeminiResponseHandler {
 
         this.message_text += text;
         this.chunk_counter++;
+
+        // Announce that we are now generating as soon as we get first meaningful chunk
+        if (!this.has_announced_generating) {
+          const { cid, id: message_id } = this.message;
+          try {
+            await this.channel.sendEvent({
+              type: "ai_indicator.update",
+              ai_state: "AI_STATE_GENERATING",
+              cid,
+              message_id,
+            });
+          } catch (err) {
+            // noop; best effort
+          }
+          this.has_announced_generating = true;
+        }
 
         // Periodic update (every 5 chunks or 500ms)
         const now = Date.now();

@@ -190,18 +190,18 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
   return (
     <>
       <div 
-        className={`flex items-center gap-3 p-3 bg-background border rounded-lg ${className}`}
+        className={`flex items-center sm:flex-nowrap flex-wrap gap-2 sm:gap-3 p-2 sm:p-3 bg-background border rounded-lg w-[200px] sm:w-auto ${className}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Status Indicator with Icon */}
         <div className={cn(
-          "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border-2",
+          "w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 border-2",
           statusConfig.bgColor,
           statusConfig.borderColor
         )}>
           <StatusIcon
-            className={`h-5 w-5 ${statusConfig.color} ${
+            className={`h-4 w-4 sm:h-5 sm:w-5 ${statusConfig.color} ${
               (loading || status === "connecting") ? "animate-spin" : ""
             }`}
           />
@@ -209,8 +209,8 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
 
         {/* Status Information */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs sm:text-sm font-medium text-foreground truncate">
               {statusConfig.text}
             </span>
             {error && (
@@ -226,13 +226,13 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
               </TooltipProvider>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="hidden sm:block text-xs text-muted-foreground mt-0.5 truncate">
             {statusConfig.description}
           </p>
           
           {/* Additional stats when connected */}
           {status === "connected" && (lastActive || messageCount > 0) && (
-            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+            <div className="hidden md:flex items-center gap-3 mt-1 text-xs text-muted-foreground">
               {lastActive && (
                 <span className="flex items-center gap-1">
                   <Wifi className="h-3 w-3" />
@@ -250,7 +250,7 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
         </div>
 
         {/* Control Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2 flex-shrink-0">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -260,18 +260,18 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
                   onClick={handleToggle}
                   disabled={loading || !channelId}
                   className={cn(
-                    "h-9 px-3 gap-2 transition-all",
+                    "h-8 sm:h-9 px-2 sm:px-3 gap-2 transition-all",
                     status === "connected" 
                       ? "border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive" 
                       : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   )}
                 >
                   {status === "connected" ? (
-                    <BotOff className="h-4 w-4" />
+                    <BotOff className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   ) : (
-                    <Zap className="h-4 w-4" />
+                    <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   )}
-                  <span className="hidden sm:inline">
+                  <span className="hidden md:inline">
                     {status === "connected" ? "Disconnect" : "Connect"}
                   </span>
                 </Button>
@@ -290,9 +290,9 @@ export const AIAgentControl: React.FC<AIAgentControlProps> = ({
                   variant="ghost"
                   onClick={handleRefresh}
                   disabled={loading || !channelId}
-                  className="h-9 w-9 p-0"
+                  className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                 >
-                  <RotateCcw className={`h-4 w-4 ${isHovered ? "animate-spin-on-hover" : ""}`} />
+                  <RotateCcw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isHovered ? "animate-spin-on-hover" : ""}`} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

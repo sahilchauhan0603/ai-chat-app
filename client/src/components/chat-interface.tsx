@@ -336,10 +336,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const [inputText, setInputText] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const isGenerating =
+    // Primary signal from AI state events
+    const aiStateGenerating =
       aiState === "AI_STATE_THINKING" ||
       aiState === "AI_STATE_GENERATING" ||
       aiState === "AI_STATE_EXTERNAL_SOURCES";
+
+    // Fallback: detect pending AI message without text yet (stream just started)
+    const hasPendingAIBotMessage = React.useMemo(() => {
+      const aiMessages = [...(messages || [])].filter(
+        (m) => m.user?.id?.startsWith("ai-bot")
+      );
+      if (!aiMessages.length) return false;
+      const last = aiMessages[aiMessages.length - 1];
+      return !last.text || last.text.length === 0;
+    }, [messages]);
+
+    const isGenerating = aiStateGenerating || hasPendingAIBotMessage;
 
     // console.log("aiState", aiState);
 

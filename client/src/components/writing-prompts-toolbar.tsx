@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Briefcase,
   ChevronDown,
@@ -212,34 +213,42 @@ export const WritingPromptsToolbar: React.FC<WritingPromptsToolbarProps> = ({
               </div>
 
               {/* Prompts list */}
-              <ScrollArea className="flex-1">
+              <ScrollArea className="h-80">
                 <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {filteredPrompts.length > 0 ? (
                     filteredPrompts.map((prompt, index) => {
                       const IconComponent = prompt.icon;
                       return (
-                        <Button
-                          key={index}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePromptSelect(prompt.text)}
-                          className="h-auto p-3 text-sm text-left justify-start hover:bg-muted/50 transition-colors"
-                        >
-                          <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0",
-                            prompt.bgColor
-                          )}>
-                            <IconComponent className={cn("h-4 w-4", prompt.color)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-foreground">
-                              {prompt.text}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {prompt.category}
-                            </div>
-                          </div>
-                        </Button>
+                        <TooltipProvider key={index}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePromptSelect(prompt.text)}
+                                className="h-auto p-3 text-sm text-left justify-start hover:bg-muted/50 transition-colors"
+                              >
+                                <div className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0",
+                                  prompt.bgColor
+                                )}>
+                                  <IconComponent className={cn("h-4 w-4", prompt.color)} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-foreground">
+                                    {prompt.text}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {prompt.category}
+                                  </div>
+                                </div>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{prompt.text}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       );
                     })
                   ) : (
@@ -258,41 +267,58 @@ export const WritingPromptsToolbar: React.FC<WritingPromptsToolbarProps> = ({
 
       {/* Toolbar - always visible */}
       <div className="bg-background border-t">
-        <div className="flex items-center px-4 py-2 gap-2">
-          <Button
-            variant={isExpanded ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-8 px-3 text-xs font-medium flex-shrink-0 gap-1.5"
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronUp className="h-3.5 w-3.5" />
-            )}
-            <Sparkles className="h-3.5 w-3.5" />
-            Prompts
-          </Button>
+        <div className="flex items-center px-2 sm:px-4 py-2 gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isExpanded ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="h-8 px-2 sm:px-3 text-xs font-medium flex-shrink-0 gap-1.5"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  )}
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Prompts
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isExpanded ? "Hide prompts" : "Show prompts"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-          <ScrollArea className="flex-1 max-w-full" orientation="horizontal">
-            <div className="flex gap-1 pb-1">
+          <div className="flex-1 max-w-full overflow-x-auto">
+            <div className="flex gap-1 pb-1 min-w-max">
               {toolbarPrompts.slice(0, 4).map((prompt, index) => {
                 const IconComponent = prompt.icon;
                 return (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPromptSelect(prompt.text)}
-                    className="h-8 px-3 text-xs whitespace-nowrap flex-shrink-0 hover:bg-muted/50 gap-1.5"
-                  >
-                    <IconComponent className="h-3.5 w-3.5" />
-                    {prompt.text}
-                  </Button>
+                  <TooltipProvider key={index}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onPromptSelect(prompt.text)}
+                          className="h-8 px-2 sm:px-3 text-xs whitespace-nowrap flex-shrink-0 hover:bg-muted/50 gap-1.5"
+                        >
+                          <IconComponent className="h-3.5 w-3.5" />
+                          <span className="hidden xs:inline">{prompt.text}</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{prompt.text}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </div>
     </div>
