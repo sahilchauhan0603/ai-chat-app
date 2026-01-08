@@ -47,23 +47,22 @@ interface ChatSidebarProps {
 }
 
 const ChannelListEmptyStateIndicator = () => (
-  <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-    <div className="mb-4">
-      <div className="w-16 h-16 bg-gradient-to-br from-primary/15 via-primary/8 to-transparent rounded-2xl flex items-center justify-center shadow-sm border border-primary/10">
-        <MessageCircle className="h-8 w-8 text-primary/70" />
+  <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+    <div className="mb-3">
+      <div className="w-12 h-12 bg-gradient-to-br from-primary/15 via-primary/8 to-transparent rounded-2xl flex items-center justify-center shadow-sm border border-primary/10">
+        <MessageCircle className="h-6 w-6 text-primary/70" />
       </div>
     </div>
-    <div className="space-y-2 max-w-xs">
-      <h3 className="text-sm font-medium text-foreground">
-        No writing sessions yet
+    <div className="space-y-1.5 max-w-[200px]">
+      <h3 className="text-xs font-medium text-foreground">
+        No sessions yet
       </h3>
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        Start a new writing session to begin creating content with your AI
-        assistant.
+      <p className="text-[11px] text-muted-foreground leading-snug">
+        Start creating content with your AI assistant
       </p>
     </div>
-    <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground/60">
-      <span>Click "New Writing Session" to get started</span>
+    <div className="mt-3 text-[10px] text-muted-foreground/60">
+      <span>Click + to begin</span>
     </div>
   </div>
 );

@@ -257,13 +257,17 @@ export class GeminiAgent implements AIAgent {
       let errorMessage = "I encountered an error while processing your request. Please try again.";
       
       if (error instanceof Error) {
+        // Check for model not found errors (404)
+        if (error.message.includes("404") || error.message.includes("not found") || error.message.includes("is not supported")) {
+          errorMessage = "⚠️ Model not found.";
+        }
         // Check for quota/rate limit errors (429)
-        if (error.message.includes("429") || error.message.includes("quota") || error.message.includes("Too Many Requests")) {
-          errorMessage = "⚠️ API quota exceeded. The Gemini API has reached its usage limit. Please check your API quota at https://ai.dev/rate-limit or try again later.";
+        else if (error.message.includes("429") || error.message.includes("quota") || error.message.includes("Too Many Requests")) {
+          errorMessage = "⚠️ API quota exceeded. The Gemini API has reached its usage limit. Please try again later.";
         }
         // Check for authentication errors (401, 403)
         else if (error.message.includes("401") || error.message.includes("403") || error.message.includes("API key")) {
-          errorMessage = "🔑 Authentication error. Please check that your Gemini API key is valid and has the necessary permissions.";
+          errorMessage = "🔑 Authentication error.";
         }
         // Check for network/connection errors
         else if (error.message.includes("fetch") || error.message.includes("network") || error.message.includes("ECONNREFUSED")) {
