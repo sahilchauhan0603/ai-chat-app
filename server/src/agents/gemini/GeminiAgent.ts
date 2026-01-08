@@ -252,9 +252,47 @@ export class GeminiAgent implements AIAgent {
       void handler.run();
     } catch (error) {
       console.error("Error sending message to Gemini:", error);
+
+      // Determine user-friendly error message
+      let errorMessage = "I encountered an error while processing your request. Please try again.";
+      
+      if (error instanceof Error) {
+        // Check for quota/rate limit errors (429)
+        if (error.message.includes("429") || error.message.includes("quota") || error.message.includes("Too Many Requests")) {
+          errorMessage = "⚠️ API quota exceeded. The Gemini API has reached its usage limit. Please check your API quota at https://ai.dev/rate-limit or try again later.";
+        }
+        // Check for authentication errors (401, 403)
+        else if (error.message.includes("401") || error.message.includes("403") || error.message.includes("API key")) {
+          errorMessage = "🔑 Authentication error. Please check that your Gemini API key is valid and has the necessary permissions.";
+        }
+        // Check for network/connection errors
+        else if (error.message.includes("fetch") || error.message.includes("network") || error.message.includes("ECONNREFUSED")) {
+          errorMessage = "🌐 Network error. Unable to connect to Gemini API. Please check your internet connection.";
+        }
+        // Generic API errors
+        else if (error.message.includes("GoogleGenerativeAI")) {
+          errorMessage = `❌ Gemini API error: ${error.message.substring(0, 200)}`;
+        }
+      }
+
+      // Update the message with the error
+      await this.chatClient.updateMessage({
+        id: channelMessage.id,
+        text: errorMessage,
+        mentioned_users: [],
+      });
+
       await this.channel.sendEvent({
         type: "ai_indicator.update",
         ai_state: "AI_STATE_ERROR",
+        cid: channelMessage.cid,
+        message_id: channelMessage.id,
+      });
+
+      // Clear the error state
+      await this.channel.sendEvent({
+        type: "ai_indicator.update",
+        ai_state: "AI_STATE_DONE",
         cid: channelMessage.cid,
         message_id: channelMessage.id,
       });

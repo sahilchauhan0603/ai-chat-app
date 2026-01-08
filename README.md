@@ -250,6 +250,51 @@ For support, email: support@yourdomain.com
     - **`AgentPlatform` Enum**: Enumerates the supported AI agent platforms (e.g., `gemini`).
     - **`WritingMessage` Interface**: Describes the structure of a message, including `id`, `text`, `user`, and `timestamp`.
 
+## 🔧 Troubleshooting
+
+### Gemini API Quota Errors (429)
+
+If you encounter the error:
+```
+Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?alt=sse: [429 Too Many Requests] You exceeded your current quota
+```
+
+**Solutions:**
+
+1. **Check Your API Quota**:
+   - Visit https://ai.dev/rate-limit to monitor your current usage
+   - Free tier limits: 15 requests per minute (RPM), 1M tokens per minute, 1500 RPD
+
+2. **Upgrade Your Plan**:
+   - Free tier may not be sufficient for heavy usage
+   - Visit https://ai.google.dev/pricing to upgrade to a paid plan
+   - Enable billing in your Google Cloud Console
+
+3. **Switch Models**:
+   - Try using `gemini-1.5-flash` for lighter requests
+   - Update `GEMINI_MODEL` in your `.env` file:
+     ```bash
+     GEMINI_MODEL=gemini-1.5-flash
+     ```
+
+4. **Implement Rate Limiting**:
+   - Add delays between requests
+   - Consider implementing a request queue
+
+5. **Wait and Retry**:
+   - Quotas reset after a period (usually 1 minute for RPM limits)
+   - Wait a few minutes before trying again
+
+### Common API Errors
+
+- **401/403 Authentication Error**: Invalid or missing API key
+  - Verify `GEMINI_API_KEY` in your `.env` file
+  - Get a new key at https://makersuite.google.com/app/apikey
+
+- **Network Errors**: Unable to connect
+  - Check your internet connection
+  - Verify firewall settings aren't blocking the API
+
 ## Data Persistence
 
 This project leverages Stream Chat for user state and conversation history persistence, rather than a traditional database. Here's how it works:

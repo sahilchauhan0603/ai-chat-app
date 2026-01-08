@@ -100,11 +100,25 @@ export class GeminiResponseHandler {
     const { cid, id: message_id } = this.message;
 
     try {
+      // Determine appropriate error message
+      let errorText = this.message_text;
+      
+      if (!errorText || errorText.trim().length === 0) {
+        // Check for specific error types
+        if (error.message.includes("429") || error.message.includes("quota") || error.message.includes("Too Many Requests")) {
+          errorText = "⚠️ API quota exceeded. The Gemini API has reached its usage limit. Please check your API quota at https://ai.dev/rate-limit or try again later.";
+        } else if (error.message.includes("401") || error.message.includes("403")) {
+          errorText = "🔑 Authentication error. Please check your Gemini API key.";
+        } else if (error.name === "AbortError" || error.message.includes("aborted")) {
+          errorText = "Generation stopped by user.";
+        } else {
+          errorText = "I encountered an error while processing your request. Please try again.";
+        }
+      }
+
       await this.chatClient.updateMessage({
         id: this.message.id,
-        text:
-          this.message_text ||
-          "I encountered an error while processing your request.",
+        text: errorText,
         mentioned_users: [],
       });
 
